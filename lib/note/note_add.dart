@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class QuickAddScreen extends StatefulWidget {
   @override
@@ -9,48 +12,64 @@ class _QuickAddScreenState extends State<QuickAddScreen> {
   final TextEditingController _amountController = TextEditingController();
   final TextEditingController _contentController = TextEditingController();
   final TextEditingController _memoController = TextEditingController();
-  String selectedCategory = '식비/카페';
-  DateTime selectedDate = DateTime.now();
+  final TextEditingController _createdAtController = TextEditingController();
+  String? _selectedCategory;
   bool isRegularExpense = false;
   bool notifyOverspend = false;
-  bool isIncome = false;
+  bool isIncome = true;
 
-  final List<String> categories = [
-    '식비/카페', '교통', '쇼핑', '고정지출', '기타'
-  ];
+  final List<String> _expensecategories = ['식비/카페', '교통', '쇼핑', '고정지출', '기타'];
+  final List<String> _incomecategories= ['월급', '용돈', '기타'];
 
-  void _selectDate() async {
-    final DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: selectedDate,
-      firstDate: DateTime(2022),
-      lastDate: DateTime(2100),
-      locale: const Locale('ko'),
+  Future<void> submitNoteAdd() async {
+    if (_selectedCategory == null || _amountController.text.isEmpty ||
+        _createdAtController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('카테고리, 금액, 날짜 입력은 필수입니다.')),
+      );
+      return;
+    }
+    final url = Uri.parse(
+        'http://10.0.2.2:8080/note/add'); // Android 에뮬레이터 기준 IP
+    final response = await http.post(
+      url,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'category': _selectedCategory,
+        'content' : _contentController.text,
+        'amount': int.parse(_amountController.text),
+        'isRegularExpense': isRegularExpense,
+        'notifyOverspend': notifyOverspend,
+        'createdAt': DateTime.parse(_createdAtController.text).toIso8601String(),
+        'memo': _memoController.text, //입력 안해도 괜찮음
+        'isIncome': isIncome,
+      }),
     );
-    if (picked != null && picked != selectedDate) {
-      setState(() {
-        selectedDate = picked;
-      });
+    if (response.statusCode == 200) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('저장 완료!')),
+      );
+      _resetForm();
+    } else {
+      print('상태 코드 : ${response.statusCode}');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('저장 실패...')),
+      );
     }
   }
+  void _resetForm(){
+    setState(() {
+      _selectedCategory = null;
+      _amountController.clear();
+      _memoController.clear();
+      _contentController.clear();
+    });
+  }
 
-  void _submit() {
-    final String amount = _amountController.text.trim();
-    final String content = _contentController.text.trim();
-    final String memo = _memoController.text.trim();
-
-    if (amount.isEmpty || content.isEmpty) return;
-
-    print('구분: ${isIncome ? '수입' : '지출'}');
-    print('날짜: \$selectedDate');
-    print('금액: \$amount');
-    print('카테고리: \$selectedCategory');
-    print('내용: \$content');
-    print('메모: \$memo');
-    print('정기지출: \$isRegularExpense');
-    print('과소비알림: \$notifyOverspend');
-
-    Navigator.pop(context);
+  @override
+  void initState(){
+    super.initState();
+    _createdAtController.text = DateFormat('yyyy-MM-dd').format(DateTime.now());
   }
 
   @override
@@ -84,20 +103,21 @@ class _QuickAddScreenState extends State<QuickAddScreen> {
             ),
             SizedBox(height: 20),
 
-            Text('날짜', style: TextStyle(fontWeight: FontWeight.bold)),
-            GestureDetector(
-              onTap: _selectDate,
-              child: Container(
-                padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                margin: EdgeInsets.symmetric(vertical: 8),
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.grey.shade400),
-                  borderRadius: BorderRadius.circular(8),
+            Container(
+              padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+              margin: EdgeInsets.symmetric(vertical: 8),
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.grey.shade400),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: TextField(
+                controller: _createdAtController,
+                readOnly: true,
+                decoration: const InputDecoration(
+                  labelText: '날짜',
+                  suffixIcon: Icon(Icons.calendar_today),
                 ),
-                child: Text(
-                  '${selectedDate.year}. ${selectedDate.month.toString().padLeft(2, '0')}. ${selectedDate.day.toString().padLeft(2, '0')} (${['월','화','수','목','금','토','일'][selectedDate.weekday - 1]})',
-                  style: TextStyle(fontSize: 16),
-                ),
+                onTap: () => _selectDate(context),
               ),
             ),
 
@@ -112,9 +132,9 @@ class _QuickAddScreenState extends State<QuickAddScreen> {
 
             Text('카테고리', style: TextStyle(fontWeight: FontWeight.bold)),
             DropdownButton<String>(
-              value: selectedCategory,
+              value: _selectedCategory,
               isExpanded: true,
-              items: categories.map((String value) {
+              items: (isIncome ? _incomecategories : _expensecategories).map((String value) {
                 return DropdownMenuItem<String>(
                   value: value,
                   child: Text(value),
@@ -122,7 +142,7 @@ class _QuickAddScreenState extends State<QuickAddScreen> {
               }).toList(),
               onChanged: (String? newValue) {
                 setState(() {
-                  selectedCategory = newValue!;
+                  _selectedCategory = newValue!;
                 });
               },
             ),
@@ -131,7 +151,7 @@ class _QuickAddScreenState extends State<QuickAddScreen> {
             Text('내용', style: TextStyle(fontWeight: FontWeight.bold)),
             TextField(
               controller: _contentController,
-              decoration: InputDecoration(hintText: '내용을 입력하세요',
+              decoration: const InputDecoration(hintText: '내용을 입력하세요',
                   hintStyle: TextStyle(color: Colors.grey)),
             ),
             SizedBox(height: 16),
@@ -162,7 +182,7 @@ class _QuickAddScreenState extends State<QuickAddScreen> {
             SizedBox(height: 24),
 
             ElevatedButton(
-              onPressed: _submit,
+              onPressed: submitNoteAdd,
               child: Text('저장'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.deepPurple,
@@ -176,5 +196,19 @@ class _QuickAddScreenState extends State<QuickAddScreen> {
         ),
       ),
     );
+  }
+  Future<void> _selectDate(BuildContext context) async{
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2100),
+      locale: const Locale('ko'),
+    );
+    if(picked != null){
+      setState((){
+        _createdAtController.text = DateFormat('yyyy-MM-dd').format(picked);
+      });
+    }
   }
 }
