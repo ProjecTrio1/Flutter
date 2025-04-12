@@ -3,6 +3,8 @@ import 'package:intl/intl.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
+import 'package:shared_preferences/shared_preferences.dart';
+
 class QuickAddScreen extends StatefulWidget {
   @override
   State<QuickAddScreen> createState() => _QuickAddScreenState();
@@ -18,6 +20,7 @@ class _QuickAddScreenState extends State<QuickAddScreen> {
   bool notifyOverspend = false;
   bool isIncome = true;
 
+
   final List<String> _expensecategories = ['식비/카페', '교통', '쇼핑', '고정지출', '기타'];
   final List<String> _incomecategories= ['월급', '용돈', '기타'];
 
@@ -29,6 +32,9 @@ class _QuickAddScreenState extends State<QuickAddScreen> {
       );
       return;
     }
+    final share = await SharedPreferences.getInstance();
+    final UserID = share.getInt('userID');
+    print("가져온 userID : $UserID");
     final url = Uri.parse(
         'http://10.0.2.2:8080/note/add'); // Android 에뮬레이터 기준 IP
     final response = await http.post(
@@ -43,8 +49,13 @@ class _QuickAddScreenState extends State<QuickAddScreen> {
         'createdAt': DateTime.parse(_createdAtController.text).toIso8601String(),
         'memo': _memoController.text, //입력 안해도 괜찮음
         'isIncome': isIncome,
+        'userID' : UserID,
       }),
     );
+
+    print('응답 본문: ${response.body}');
+    print('상태 코드: ${response.statusCode}');
+
     if (response.statusCode == 200) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('저장 완료!')),

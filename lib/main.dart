@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'home/main_home.dart';
+import 'login/login_home.dart';
 
 void main() {
   runApp(const MyApp());
@@ -20,7 +20,7 @@ class MyApp extends StatelessWidget {
       supportedLocales: const[
         Locale('ko','KR'),
       ],
-      home: MenuHomeScreen(),
+      home: LoginHome(),
       debugShowCheckedModeBanner: false,
     );
   }
