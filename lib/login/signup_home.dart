@@ -63,7 +63,8 @@ class _SignupHomeState extends State<SignupHome> {
       ),
     );
   }
-
+  bool _isPasswordVisible = false;
+  bool _isPasswordCheckVisible = false;
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -76,20 +77,43 @@ class _SignupHomeState extends State<SignupHome> {
               controller: _nameController,
               decoration: const InputDecoration(labelText: '이름'),
             ),
+            SizedBox(height: 12),
             TextField(
               controller: _emailController,
               decoration: const InputDecoration(labelText: '이메일'),
               keyboardType: TextInputType.emailAddress,
             ),
+            SizedBox(height: 12),
             TextField(
               controller: _passwordController,
-              decoration: const InputDecoration(labelText: '비밀번호'),
-              obscureText: true,
+              decoration: InputDecoration(
+                labelText: '비밀번호',
+                suffixIcon: IconButton(
+                  icon: Icon(_isPasswordVisible ? Icons.visibility : Icons.visibility_off),
+                  onPressed: (){
+                    setState(() {
+                      _isPasswordVisible = !_isPasswordVisible;
+                    });
+                  },
+                ),
+              ),
+              obscureText: !_isPasswordVisible,
             ),
+            SizedBox(height: 12),
             TextField(
               controller: _passwordCheckController,
-              decoration: const InputDecoration(labelText: '비밀번호 확인'),
-              obscureText: true,
+              decoration: InputDecoration(
+                labelText: '비밀번호 확인',
+                suffixIcon: IconButton(
+                  icon: Icon(_isPasswordCheckVisible ? Icons.visibility : Icons.visibility_off),
+                  onPressed: (){
+                    setState(() {
+                      _isPasswordCheckVisible = !_isPasswordCheckVisible;
+                    });
+                  },
+                ),
+              ),
+              obscureText: !_isPasswordCheckVisible,
             ),
             const SizedBox(height: 20),
             ElevatedButton(
