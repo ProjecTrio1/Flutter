@@ -96,6 +96,9 @@ class _QuickAddScreenState extends State<QuickAddScreen> {
               onPressed: (index) {
                 setState(() {
                   isIncome = index == 0;
+                  _selectedCategory = isIncome
+                      ? _incomecategories.first
+                      : _expensecategories.first;
                 });
               },
               borderRadius: BorderRadius.circular(8),

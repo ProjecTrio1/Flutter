@@ -13,12 +13,12 @@ class LoginHome extends StatefulWidget {
 }
 
 class _LoginHomeState extends State<LoginHome> {
-  final TextEditingController _nameController = TextEditingController();
+  //final TextEditingController _nameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
   void _submitForm() async{
-    final name = _nameController.text;
+    // final name = _nameController.text;
     final email = _emailController.text;
     final password = _passwordController.text;
 
@@ -27,7 +27,7 @@ class _LoginHomeState extends State<LoginHome> {
       url,
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({
-        'username' :name,
+        // 'username' :name,
         'email' : email,
         'password' : password,
       }),
@@ -54,14 +54,6 @@ class _LoginHomeState extends State<LoginHome> {
       message = '서버 응답 파싱 오류';
     }
     _showDialog(message);
-    if (response.statusCode == 200) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => MenuHomeScreen()),
-      );
-    } else {
-      _showDialog(message);
-    }
 
   }
   void _showDialog(String message) {
@@ -79,6 +71,8 @@ class _LoginHomeState extends State<LoginHome> {
       ),
     );
   }
+
+  bool _isPasswordVisible = false;
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -87,10 +81,10 @@ class _LoginHomeState extends State<LoginHome> {
         padding: const EdgeInsets.all(20.0),
         child: Column(
           children: [
-            TextField(
-              controller: _nameController,
-              decoration: const InputDecoration(labelText: '이름'),
-            ),
+            // TextField(
+            //   controller: _nameController,
+            //   decoration: const InputDecoration(labelText: '이름'),
+            // ),
             TextField(
               controller: _emailController,
               decoration: const InputDecoration(labelText: '이메일'),
@@ -98,31 +92,28 @@ class _LoginHomeState extends State<LoginHome> {
             ),
             TextField(
               controller: _passwordController,
-              decoration: const InputDecoration(labelText: '비밀번호'),
-              obscureText: true,
+              obscureText: !_isPasswordVisible,
+              decoration: InputDecoration(
+                labelText: '비밀번호',
+                suffixIcon: IconButton(
+                  icon: Icon(
+                      _isPasswordVisible ? Icons.visibility : Icons.visibility_off,),
+                  onPressed: () {
+                    setState(() {
+                      _isPasswordVisible = !_isPasswordVisible;
+                    });
+                  },
+                ),
+              ),
             ),
             const SizedBox(height: 20),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                ElevatedButton(
-                  onPressed: () {
-                    print("버튼 눌림");
-                    _submitForm();
-                  },
-                  child: const Text('로그인'),
-                ),
-                TextButton(
-                  onPressed: () {
-                    // 회원가입 화면으로 이동
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => const SignupHome()),
-                    );
-                  },
-                  child: const Text('회원가입'),
-                ),
-              ],
+            SizedBox(height: 20),
+            ElevatedButton(onPressed: _submitForm, child: Text('로그인')),
+            TextButton(
+              onPressed: () {
+                Navigator.push(context, MaterialPageRoute(builder: (context) => SignupHome()));
+              },
+              child: Text('회원가입'),
             ),
           ],
         ),
