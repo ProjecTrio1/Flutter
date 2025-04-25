@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'layout/navigation.dart';
 import 'login/login_home.dart';
 
 void main() {
@@ -17,8 +18,8 @@ class MyApp extends StatelessWidget {
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
-      supportedLocales: const[
-        Locale('ko','KR'),
+      supportedLocales: const [
+        Locale('ko', 'KR'),
       ],
       home: LoginHome(),
       debugShowCheckedModeBanner: false,

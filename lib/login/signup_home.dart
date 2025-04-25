@@ -37,8 +37,13 @@ class _SignupHomeState extends State<SignupHome> {
       }),
     );
     if (response.statusCode == 200) {
-      _showDialog('성공');
-      Navigator.pop(context);
+      _showDialog('성공',onClose:(){
+        _nameController.clear();
+        _emailController.clear();
+        _passwordController.clear();
+        _passwordCheckController.clear();
+        Navigator.pop(context);
+      });
     }else if(response.statusCode == 409) {
       _showDialog('이미 존재하는 사용자입니다.');
     }else if(response.statusCode == 400){
@@ -48,7 +53,7 @@ class _SignupHomeState extends State<SignupHome> {
     }
   }
 
-  void _showDialog(String message) {
+  void _showDialog(String message, {VoidCallback? onClose}) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -56,7 +61,12 @@ class _SignupHomeState extends State<SignupHome> {
         content: Text(message),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: (){
+              Navigator.pop(context);
+              if (onClose != null) {
+                onClose();
+              }
+            },
             child: const Text('확인'),
           ),
         ],

@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import 'signup_home.dart';// main_home.dart 경로 임포트
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../layout/navigation.dart';
 
 class LoginHome extends StatefulWidget {
   const LoginHome({super.key});
@@ -39,7 +40,7 @@ class _LoginHomeState extends State<LoginHome> {
       message = decoded is Map && decoded.containsKey('message')
           ? decoded['message']
           : rBody;
-      if(response.statusCode == 200 && decoded['user'] != null){
+      if (response.statusCode == 200 && decoded['user'] != null) {
         final user = decoded['user'];
         final userID = user['id'];
         print("userID: $userID");
@@ -47,7 +48,10 @@ class _LoginHomeState extends State<LoginHome> {
         final share = await SharedPreferences.getInstance();
         await share.setInt('userID', userID);
 
-        Navigator.pushReplacement(context, MaterialPageRoute(builder: (context)=>MenuHomeScreen()),);
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => Navigation()),
+        );
         return;
       }
     } catch (e) {
