@@ -8,18 +8,21 @@ class SignupHome extends StatefulWidget {
   @override
   State<SignupHome> createState() => _SignupHomeState();
 }
+enum Gender {male, female}
 
 class _SignupHomeState extends State<SignupHome> {
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _passwordCheckController = TextEditingController();
+  Gender _selectedGender = Gender.male;
 
   void _signup() async{
     final name = _nameController.text;
     final email = _emailController.text;
     final password = _passwordController.text;
     final passwordCheck = _passwordCheckController.text;
+    final genderStr = _selectedGender == Gender.male ? 'M' : 'F';
 
     if (password != passwordCheck) {
       _showDialog('비밀번호가 일치하지 않습니다.');
@@ -34,6 +37,7 @@ class _SignupHomeState extends State<SignupHome> {
         'email' : email,
         'password1' : password,
         'password2' : passwordCheck,
+        'gender' : genderStr,
       }),
     );
     if (response.statusCode == 200) {
@@ -94,6 +98,30 @@ class _SignupHomeState extends State<SignupHome> {
               keyboardType: TextInputType.emailAddress,
             ),
             SizedBox(height: 12),
+            ListTile(
+              title: const Text('남성'),
+              leading: Radio<Gender>(
+                value: Gender.male,
+                groupValue: _selectedGender,
+                onChanged: (Gender? value){
+                  setState(() {
+                    _selectedGender = value!;
+                  });
+                },
+              ),
+            ),
+            ListTile(
+              title: const Text('여성'),
+              leading: Radio<Gender>(
+                value: Gender.female,
+                groupValue: _selectedGender,
+                onChanged: (Gender? value){
+                  setState(() {
+                    _selectedGender = value!;
+                  });
+                },
+              ),
+            ),
             TextField(
               controller: _passwordController,
               decoration: InputDecoration(
