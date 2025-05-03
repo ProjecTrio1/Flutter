@@ -21,7 +21,7 @@ class _QuickAddScreenState extends State<QuickAddScreen> {
   bool isIncome = true;
 
 
-  final List<String> _expensecategories = ['식비/카페', '교통', '쇼핑', '고정지출', '기타'];
+  final List<String> _expensecategories = ['식비', '카페/디저트' '교통/차량', '쇼핑/생활/뷰티', '건강/의료', '교육/학원', '문화/여가', '공공/부동산', '생활서비스', '기술/금융', '기타'];
   final List<String> _incomecategories= ['월급', '용돈', '기타'];
 
   Future<void> submitNoteAdd() async {

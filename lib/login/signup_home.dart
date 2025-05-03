@@ -16,7 +16,18 @@ class _SignupHomeState extends State<SignupHome> {
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _passwordCheckController = TextEditingController();
   Gender _selectedGender = Gender.male;
-
+  int _selectAge = 2;
+  final Map<int, String> ageGroups={
+    1:'10대이하',
+    2:'20대',
+    3:'30대',
+    4:'40대',
+    5:'50대',
+    6:'60대',
+    7:'70대',
+    8:'80대',
+    9:'90대이상',
+  };
   void _signup() async{
     final name = _nameController.text;
     final email = _emailController.text;
@@ -38,6 +49,7 @@ class _SignupHomeState extends State<SignupHome> {
         'password1' : password,
         'password2' : passwordCheck,
         'gender' : genderStr,
+        'age' : _selectAge,
       }),
     );
     if (response.statusCode == 200) {
@@ -121,6 +133,24 @@ class _SignupHomeState extends State<SignupHome> {
                   });
                 },
               ),
+            ),SizedBox(height: 12),
+            DropdownButtonFormField<int>(
+              value: _selectAge,
+              decoration: InputDecoration(
+                labelText: '연령대',
+                border: OutlineInputBorder(),
+              ),
+              items: ageGroups.entries.map((entry){
+                return DropdownMenuItem<int>(
+                  value: entry.key,
+                  child: Text(entry.value),
+                );
+              }).toList(),
+              onChanged: (value){
+                setState(() {
+                  _selectAge = value!;
+                });
+              },
             ),
             TextField(
               controller: _passwordController,
