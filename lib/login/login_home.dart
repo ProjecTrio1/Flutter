@@ -59,6 +59,16 @@ class _LoginHomeState extends State<LoginHome> {
     }
     _showDialog(message);
 
+     /* 서버 없이 테스트
+    final testUserID = 1; // 테스트용 ID
+    final share = await SharedPreferences.getInstance();
+    await share.setInt('userID', testUserID);
+
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => Navigation()),
+    );
+      */
   }
   void _showDialog(String message) {
     showDialog(

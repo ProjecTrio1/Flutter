@@ -47,7 +47,7 @@ class _QuickAddScreenState extends State<QuickAddScreen> {
         'isRegularExpense': isRegularExpense,
         'notifyOverspend': notifyOverspend,
         'createdAt': DateTime.parse(_createdAtController.text).toIso8601String(),
-        'memo': _memoController.text, //입력 안해도 괜찮음
+        'memo': _memoController.text, 
         'isIncome': isIncome,
         'userID' : UserID,
       }),
