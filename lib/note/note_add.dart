@@ -21,7 +21,7 @@ class _QuickAddScreenState extends State<QuickAddScreen> {
   bool isIncome = true;
 
 
-  final List<String> _expensecategories = ['식비', '카페/디저트' '교통/차량', '쇼핑/생활/뷰티', '건강/의료', '교육/학원', '문화/여가', '공공/부동산', '생활서비스', '기술/금융', '기타'];
+  final List<String> _expensecategories = ['식비', '카페/디저트' ,'교통/차량', '쇼핑/생활/뷰티', '건강/의료', '교육/학원', '문화/여가', '기타'];
   final List<String> _incomecategories= ['월급', '용돈', '기타'];
 
   Future<void> submitNoteAdd() async {
@@ -52,14 +52,35 @@ class _QuickAddScreenState extends State<QuickAddScreen> {
         'userID' : UserID,
       }),
     );
+    final decodedBody = utf8.decode(response.bodyBytes); // UTF-8 디코딩 강제
+    final Map<String, dynamic> responseData = jsonDecode(decodedBody);
 
     print('응답 본문: ${response.body}');
     print('상태 코드: ${response.statusCode}');
 
     if (response.statusCode == 200) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('저장 완료!')),
-      );
+      final Map<String, dynamic> responseData = jsonDecode(utf8.decode(response.bodyBytes));
+
+      if(responseData.containsKey('recommendation')){
+        showDialog(context: context,
+            builder: (context) => AlertDialog(
+              title: Text('과소비 알림'),
+              content: Text(responseData['recommendation']),
+              actions: [
+                TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: Text('확인'),
+                ),
+              ],
+            ));
+      }else{
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('저장 완료!')),
+        );
+      }
+      // ScaffoldMessenger.of(context).showSnackBar(
+      //   const SnackBar(content: Text('저장 완료!')),
+      // );
       _resetForm();
     } else {
       print('상태 코드 : ${response.statusCode}');
@@ -80,7 +101,8 @@ class _QuickAddScreenState extends State<QuickAddScreen> {
   @override
   void initState(){
     super.initState();
-    _createdAtController.text = DateFormat('yyyy-MM-dd').format(DateTime.now());
+    final now = DateTime.now();
+    _createdAtController.text = now.toIso8601String();
   }
 
   @override
@@ -220,8 +242,17 @@ class _QuickAddScreenState extends State<QuickAddScreen> {
       locale: const Locale('ko'),
     );
     if(picked != null){
+      final now = DateTime.now();
+      final fullDateTime = DateTime(
+        picked.year,
+        picked.month,
+        picked.day,
+        now.hour,
+        now.minute,
+        now.second,
+      );
       setState((){
-        _createdAtController.text = DateFormat('yyyy-MM-dd').format(picked);
+        _createdAtController.text = fullDateTime.toIso8601String();
       });
     }
   }
