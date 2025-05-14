@@ -3,6 +3,8 @@ import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../style/note_style.dart';
+import '../style/main_style.dart';
 
 class NoteListScreen extends StatefulWidget {
   final int year;
@@ -65,24 +67,6 @@ class _NoteListScreenState extends State<NoteListScreen> {
     }
   }
 
-  Widget _buildSummaryBox(String label, int amount, Color color) {
-    final formatter = NumberFormat('#,###');
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: Colors.grey[100],
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(label, style: TextStyle(fontSize: 16)),
-          Text('${formatter.format(amount)}원', style: TextStyle(color: color, fontSize: 16)),
-        ],
-      ),
-    );
-  }
-
   Widget _buildNoteItem(Map<String, dynamic> note) {
     final formatter = NumberFormat('#,###');
     final time = DateFormat('HH:mm').format(DateTime.parse(note['createdAt']).toLocal());
@@ -92,25 +76,32 @@ class _NoteListScreenState extends State<NoteListScreen> {
     final content = note['content'] ?? '';
     final memo = note['memo'] ?? '';
 
-    return ListTile(
-      title: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      margin: const EdgeInsets.only(bottom: 4),
+      decoration: NoteDecorations.card,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          Text(category, style: NoteTextStyles.subtitle),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(category, style: TextStyle(color: Colors.grey, fontSize: 13)),
-              Text(content, style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500)),
-              if (memo.isNotEmpty) Text(memo, style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+              Text(content, style: NoteTextStyles.subHeader),
+              Text(
+                '${isIncome ? '+' : '-'}${formatter.format(amount)}원',
+                style: isIncome ? NoteTextStyles.income : NoteTextStyles.expense,
+              )
             ],
           ),
-          Text(
-            '${isIncome ? '+' : '-'}${formatter.format(amount)}원',
-            style: TextStyle(color: isIncome ? Colors.blue : Colors.red, fontSize: 15),
-          )
+          if (memo.isNotEmpty)
+            Text(memo, style: NoteTextStyles.subtitle),
+          Align(
+            alignment: Alignment.bottomRight,
+            child: Text(time, style: NoteTextStyles.time),
+          ),
         ],
       ),
-      subtitle: Text(time, style: TextStyle(fontSize: 12)),
     );
   }
 
@@ -122,7 +113,6 @@ class _NoteListScreenState extends State<NoteListScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-
         Expanded(
           child: ListView.builder(
             itemCount: sortedDates.length,

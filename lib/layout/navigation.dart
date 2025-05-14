@@ -6,6 +6,7 @@ import '../group/group_home.dart';
 import '../setting/setting_home.dart';
 import '../note/note_add.dart'; // QuickAddScreen
 import '../group/post_add.dart';
+import '../style/main_style.dart';
 
 class Navigation extends StatefulWidget {
   @override
@@ -22,7 +23,7 @@ class _NavigationState extends State<Navigation> {
     GroupHomeScreen(           // 3: 그룹
       username: 'test1',       // 더미 사용자 이름
       userID: 9,               // 더미 사용자 ID
-      groupName: 'group1',  // 더미 그룹 이름
+      groupName: 'group1',     // 더미 그룹 이름
     ),
     SettingHomeScreen(),        // 4: 마이페이지
   ];
@@ -48,12 +49,12 @@ class _NavigationState extends State<Navigation> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('LOGO', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                Text('LOGO', style: AppTextStyles.title),
                 Row(
                   children: [
-                    Icon(Icons.notifications, color: Colors.black),
+                    Icon(Icons.notifications, color: AppColors.textPrimary),
                     SizedBox(width: 12),
-                    Icon(Icons.menu, color: Colors.black),
+                    Icon(Icons.menu, color: AppColors.textPrimary),
                   ],
                 )
               ],
@@ -81,26 +82,32 @@ class _NavigationState extends State<Navigation> {
             );
           }
         },
-        child: Icon(Icons.add),
-        backgroundColor: Colors.blue,
+        backgroundColor: AppColors.primary,
+        child: Icon(Icons.add, color: Colors.white, size: 28),
+        elevation: 4,
       )
           : null,
 
-
       // 하단 네비게이션 바
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _selectedIndex,
-        onTap: _onItemTapped,
-        selectedItemColor: Color(0xFFFFB300),
-        unselectedItemColor: Colors.grey,
-        type: BottomNavigationBarType.fixed,
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.edit_note), label: '가계부'),
-          BottomNavigationBarItem(icon: Icon(Icons.show_chart), label: '자산'),
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: '홈'),
-          BottomNavigationBarItem(icon: Icon(Icons.group), label: '그룹'),
-          BottomNavigationBarItem(icon: Icon(Icons.settings), label: '마이페이지'),
-        ],
+      bottomNavigationBar: SizedBox(
+        child: BottomNavigationBar(
+          currentIndex: _selectedIndex,
+          onTap: _onItemTapped,
+          selectedItemColor: AppColors.primary,
+          unselectedItemColor: Colors.grey,
+          selectedLabelStyle: AppTextStyles.navLabel,
+          unselectedLabelStyle: AppTextStyles.navLabel.copyWith(
+            fontWeight: FontWeight.normal,
+          ),
+          type: BottomNavigationBarType.fixed,
+          items: const [
+            BottomNavigationBarItem(icon: Icon(Icons.edit_note), label: '가계부'),
+            BottomNavigationBarItem(icon: Icon(Icons.show_chart), label: '자산'),
+            BottomNavigationBarItem(icon: Icon(Icons.home), label: '홈'),
+            BottomNavigationBarItem(icon: Icon(Icons.group), label: '그룹'),
+            BottomNavigationBarItem(icon: Icon(Icons.settings), label: '마이페이지'),
+          ],
+        ),
       ),
     );
   }

@@ -22,7 +22,7 @@ class _LoginHomeState extends State<LoginHome> {
     // final name = _nameController.text;
     final email = _emailController.text;
     final password = _passwordController.text;
-
+    /* 서버 테스트
     final url = Uri.parse('http://10.0.2.2:8080/user/login'); // Android 에뮬레이터 기준 IP
     final response = await http.post(
       url,
@@ -59,7 +59,9 @@ class _LoginHomeState extends State<LoginHome> {
     }
     _showDialog(message);
 
-     /* 서버 없이 테스트
+     */
+
+     /* 서버 없이 테스트*/
     final testUserID = 1; // 테스트용 ID
     final share = await SharedPreferences.getInstance();
     await share.setInt('userID', testUserID);
@@ -68,7 +70,7 @@ class _LoginHomeState extends State<LoginHome> {
       context,
       MaterialPageRoute(builder: (context) => Navigation()),
     );
-      */
+
   }
   void _showDialog(String message) {
     showDialog(
