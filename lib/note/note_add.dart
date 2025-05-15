@@ -16,6 +16,7 @@ class _QuickAddScreenState extends State<QuickAddScreen> {
   final _contentController = TextEditingController();
   final _memoController = TextEditingController();
   final _createdAtController = TextEditingController();
+  DateTime _selectedDateTime = DateTime.now();
   String? _selectedCategory;
   bool isRegularExpense = false;
   bool notifyOverspend = false;
@@ -27,13 +28,13 @@ class _QuickAddScreenState extends State<QuickAddScreen> {
   @override
   void initState() {
     super.initState();
-    _createdAtController.text = DateFormat('yyyy-MM-dd').format(DateTime.now());
+    _createdAtController.text = DateFormat('yyyy-MM-dd HH:mm').format(_selectedDateTime);
   }
 
   Future<void> _selectDate(BuildContext context) async {
-    final picked = await showDatePicker(
+    final pickedDate = await showDatePicker(
       context: context,
-      initialDate: DateTime.now(),
+      initialDate: _selectedDateTime,
       firstDate: DateTime(2000),
       lastDate: DateTime(2100),
       locale: const Locale('ko'),
@@ -51,8 +52,32 @@ class _QuickAddScreenState extends State<QuickAddScreen> {
         );
       },
     );
-    if (picked != null) {
-      _createdAtController.text = DateTime.now().toIso8601String();
+
+    if (pickedDate != null) {
+      final pickedTime = await showTimePicker(
+        context: context,
+        initialTime: TimeOfDay.fromDateTime(_selectedDateTime),
+        builder: (context, child) {
+          return MediaQuery(
+            data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
+            child: child!,
+          );
+        },
+      );
+
+      if (pickedTime != null) {
+        final combined = DateTime(
+          pickedDate.year,
+          pickedDate.month,
+          pickedDate.day,
+          pickedTime.hour,
+          pickedTime.minute,
+        );
+        setState(() {
+          _selectedDateTime = combined;
+          _createdAtController.text = DateFormat('yyyy-MM-dd HH:mm').format(combined);
+        });
+      }
     }
   }
 
@@ -76,7 +101,7 @@ class _QuickAddScreenState extends State<QuickAddScreen> {
         'amount': int.parse(_amountController.text),
         'isRegularExpense': isRegularExpense,
         'notifyOverspend': notifyOverspend,
-        'createdAt': DateTime.parse(_createdAtController.text).toIso8601String(),
+        'createdAt': _selectedDateTime.toIso8601String(),
         'memo': _memoController.text,
         'isIncome': isIncome,
         'userID': userID,
@@ -87,7 +112,7 @@ class _QuickAddScreenState extends State<QuickAddScreen> {
     print("서버 응답 : $bodyString");
 
     if (response.statusCode == 200) {
-      try{
+      try {
         final decoded = jsonDecode(bodyString);
         if (decoded is Map && decoded.containsKey('recommendation')) {
           showDialog(
@@ -102,7 +127,7 @@ class _QuickAddScreenState extends State<QuickAddScreen> {
           ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('저장 완료!')));
         }
         _resetForm();
-      }catch(e){
+      } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('서버 응답 오류')));
       }
     } else {
