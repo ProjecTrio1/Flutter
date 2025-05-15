@@ -23,7 +23,6 @@ class _NavigationState extends State<Navigation> {
     GroupHomeScreen(           // 3: 그룹
       username: 'test1',       // 더미 사용자 이름
       userID: 9,               // 더미 사용자 ID
-      groupName: 'group1',     // 더미 그룹 이름
     ),
     SettingHomeScreen(),        // 4: 마이페이지
   ];
@@ -83,10 +82,15 @@ class _NavigationState extends State<Navigation> {
           }
         },
         backgroundColor: AppColors.primary,
-        child: Icon(Icons.add, color: Colors.white, size: 28),
+        child: Icon(
+          _selectedIndex == 3 ? Icons.create : Icons.add,
+          color: Colors.white,
+          size: 28,
+        ),
         elevation: 4,
       )
           : null,
+
 
       // 하단 네비게이션 바
       bottomNavigationBar: SizedBox(

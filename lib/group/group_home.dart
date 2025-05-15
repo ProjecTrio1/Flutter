@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'post_best.dart';
 import 'post_add.dart';
 import 'post_detail.dart';
+import 'post_scrap.dart';
 
-//예시 데이터
+// todo: 예시 데이터 그냥 전체 글 익명으로 표시! 그룹화도 안함 그냥 하나로 만들어도 돼
 final List<Map<String, dynamic>> dummyPosts = [
   {
     'title': '제목1',
@@ -24,7 +25,7 @@ final List<Map<String, dynamic>> dummyPosts = [
       },
       {
         'content': '댓글2',
-        'author': 'user2@gmail.com',
+        'author': 'admin1@gmail.com',
         'likes': 0,
         'date': '05/04 19:10',
         'anonymous': true,
@@ -43,17 +44,14 @@ final List<Map<String, dynamic>> dummyPosts = [
   },
 ];
 
-
 class GroupHomeScreen extends StatelessWidget {
   final String username;
   final int userID;
-  final String groupName;
 
   const GroupHomeScreen({
     super.key,
     required this.username,
     required this.userID,
-    required this.groupName,
   });
 
   @override
@@ -62,18 +60,14 @@ class GroupHomeScreen extends StatelessWidget {
       appBar: AppBar(
         title: Row(
           children: [
-            Text('$groupName 커뮤니티'),
+            Text('커뮤니티'),
             SizedBox(width: 8),
-            Tooltip(
-              message: '소비패턴 어쩌구? 설명',
-              child: Icon(Icons.help_outline, size: 20),
-            ),
           ],
         ),
         actions: [
           IconButton(
             icon: Icon(Icons.star_border),
-            tooltip: '베스트 글',
+            tooltip: '베스트',
             onPressed: () {
               Navigator.push(
                 context,
@@ -83,8 +77,12 @@ class GroupHomeScreen extends StatelessWidget {
           ),
           IconButton(
             icon: Icon(Icons.bookmark_outline),
+            tooltip: '스크랩',
             onPressed: () {
-              Navigator.pushNamed(context, '/group/scrap');
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => GroupScrapScreen()),
+              );
             },
           ),
         ],
@@ -102,8 +100,10 @@ class GroupHomeScreen extends StatelessWidget {
                 children: [
                   Text(post['content'], maxLines: 2, overflow: TextOverflow.ellipsis),
                   SizedBox(height: 4),
-                  Text('작성자: ${post['author']}',
-                      style: TextStyle(fontSize: 12, color: Colors.grey)),
+                  Text(
+                    '작성자: 익명',
+                    style: TextStyle(fontSize: 12, color: Colors.grey),
+                  ),
                 ],
               ),
               trailing: Row(
@@ -134,7 +134,7 @@ class GroupHomeScreen extends StatelessWidget {
         onPressed: () {
           Navigator.pushNamed(context, '/group/add');
         },
-        child: Icon(Icons.edit),
+        child: Icon(Icons.create),
         tooltip: '글쓰기',
       ),
     );

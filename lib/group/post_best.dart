@@ -18,7 +18,7 @@ class _GroupBestScreenState extends State<GroupBestScreen> {
     }
     return filtered;
   }
-  // todo: 베스트 글은 다른 그룹에선 댓글 안 남기게 하는 게 좋을 듯.. 다른그룹이 볼 수는 있음
+  // todo: 10개 이상 올라감
   @override
   Widget build(BuildContext context) {
     return Scaffold(
