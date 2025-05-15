@@ -52,7 +52,7 @@ class _QuickAddScreenState extends State<QuickAddScreen> {
       },
     );
     if (picked != null) {
-      _createdAtController.text = DateFormat('yyyy-MM-dd').format(picked);
+      _createdAtController.text = DateTime.now().toIso8601String();
     }
   }
 
@@ -83,23 +83,30 @@ class _QuickAddScreenState extends State<QuickAddScreen> {
       }),
     );
 
-    final decoded = jsonDecode(utf8.decode(response.bodyBytes));
+    final bodyString = utf8.decode(response.bodyBytes);
+    print("서버 응답 : $bodyString");
 
     if (response.statusCode == 200) {
-      if (decoded.containsKey('recommendation')) {
-        showDialog(
-          context: context,
-          builder: (_) => AlertDialog(
-            title: Text('과소비 알림'),
-            content: Text(decoded['recommendation']),
-            actions: [TextButton(onPressed: () => Navigator.pop(context), child: Text('확인'))],
-          ),
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('저장 완료!')));
+      try{
+        final decoded = jsonDecode(bodyString);
+        if (decoded is Map && decoded.containsKey('recommendation')) {
+          showDialog(
+            context: context,
+            builder: (_) => AlertDialog(
+              title: Text('과소비 알림'),
+              content: Text(decoded['recommendation']),
+              actions: [TextButton(onPressed: () => Navigator.pop(context), child: Text('확인'))],
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('저장 완료!')));
+        }
+        _resetForm();
+      }catch(e){
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('서버 응답 오류')));
       }
-      _resetForm();
     } else {
+      print("에러 상태코드 : ${response.statusCode}");
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('저장 실패...')));
     }
   }
