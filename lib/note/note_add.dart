@@ -114,7 +114,7 @@ class _QuickAddScreenState extends State<QuickAddScreen> {
     if (response.statusCode == 200) {
       try {
         final decoded = jsonDecode(bodyString);
-        if (decoded is Map && decoded.containsKey('recommendation')) {
+        if (decoded is Map && decoded.containsKey('recommendation') && (decoded['recommendation'] as String).trim().isNotEmpty) {
           showDialog(
             context: context,
             builder: (_) => AlertDialog(
