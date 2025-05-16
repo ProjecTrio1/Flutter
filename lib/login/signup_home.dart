@@ -18,15 +18,17 @@ class _SignupHomeState extends State<SignupHome> {
   Gender _selectedGender = Gender.male;
   int _selectAge = 2;
   final Map<int, String> ageGroups={
-    1:'10대이하',
-    2:'20대',
-    3:'30대',
-    4:'40대',
-    5:'50대',
-    6:'60대',
-    7:'70대',
-    8:'80대',
-    9:'90대이상',
+    1:'10대 미만',
+    2:'10-19세',
+    3:'20-29세',
+    4:'30-39세',
+    5:'40-49세',
+    6:'50-59세',
+    7:'60-69세',
+    8:'70-79세',
+    9:'80-89세',
+    10:'90-99세',
+    11:'100세 이상'
   };
   void _signup() async{
     final name = _nameController.text;
