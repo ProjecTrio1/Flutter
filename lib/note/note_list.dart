@@ -66,6 +66,17 @@ class _NoteListScreenState extends State<NoteListScreen> {
       });
     }
   }
+  Future<void> _deleteNoteById(int id) async{
+    final url = Uri.parse('http://10.0.2.2:8080/note/delete/$id');
+    final response = await http.get(url);
+
+    if (response.statusCode == 204) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('삭제되었습니다.')));
+      _fetchNotesForList(widget.year, widget.month); // 목록 새로고침
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('삭제 실패')));
+    }
+  }
 
   Widget _buildNoteItem(Map<String, dynamic> note) {
     final formatter = NumberFormat('#,###');
@@ -75,6 +86,7 @@ class _NoteListScreenState extends State<NoteListScreen> {
     final category = note['category'] ?? '';
     final content = note['content'] ?? '';
     final memo = note['memo'] ?? '';
+    final int? id = note['id']; //삭제용 ID
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
@@ -88,10 +100,31 @@ class _NoteListScreenState extends State<NoteListScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(content, style: NoteTextStyles.subHeader),
-              Text(
-                '${isIncome ? '+' : '-'}${formatter.format(amount)}원',
-                style: isIncome ? NoteTextStyles.income : NoteTextStyles.expense,
-              )
+              Row(
+                children: [
+                  Text(
+                    '${isIncome ? '+' : '-'}${formatter.format(amount)}원',
+                    style: isIncome ? NoteTextStyles.income : NoteTextStyles.expense,
+                  ),
+                  if(id!=null)
+                    IconButton(
+                      icon: Icon(Icons.delete, color: Colors.red,),
+                      onPressed: (){
+                        showDialog(context: context, builder: (_) => AlertDialog(
+                          title: Text('삭제 확인'),
+                          content: Text('이 소비 내역을 삭제하시겠습니까?'),
+                          actions: [TextButton(onPressed: () => Navigator.pop(context), child: Text('취소')),
+                            TextButton(onPressed: () {
+                              Navigator.pop(context);
+                              _deleteNoteById(id);
+                            }, child: Text('삭제'),
+                            ),
+                          ],
+                        ));
+                      },
+                    )
+                ],
+              ),
             ],
           ),
           if (memo.isNotEmpty)
