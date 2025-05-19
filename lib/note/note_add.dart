@@ -5,6 +5,7 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../style/note_style.dart';
 import '../style/main_style.dart';
+import '../setting/category_setting.dart';
 
 class QuickAddScreen extends StatefulWidget {
   @override
@@ -22,13 +23,24 @@ class _QuickAddScreenState extends State<QuickAddScreen> {
   bool notifyOverspend = false;
   bool isIncome = true;
 
-  final _expensecategories = ['식비', '카페/디저트', '교통/차량', '쇼핑/생활/뷰티', '건강/의료', '교육/학원', '문화/여가', '기타'];
-  final _incomecategories = ['월급', '용돈', '기타'];
+  List<String> _expenseCategories = [
+    '식비', '카페/디저트', '교통/차량', '쇼핑/생활/뷰티', '건강/의료', '교육/학원', '문화/여가', '기타'
+  ];
+  List<String> _incomeCategories = ['월급', '용돈', '기타'];
 
   @override
   void initState() {
     super.initState();
     _createdAtController.text = DateFormat('yyyy-MM-dd HH:mm').format(_selectedDateTime);
+    _loadCategories();
+  }
+
+  Future<void> _loadCategories() async {
+    final prefs = await SharedPreferences.getInstance();
+    final loaded = prefs.getStringList('expenseCategories');
+    if (loaded != null && loaded.isNotEmpty) {
+      setState(() => _expenseCategories = loaded);
+    }
   }
 
   Future<void> _selectDate(BuildContext context) async {
@@ -181,7 +193,7 @@ class _QuickAddScreenState extends State<QuickAddScreen> {
               onPressed: (index) {
                 setState(() {
                   isIncome = index == 0;
-                  _selectedCategory = isIncome ? _incomecategories.first : _expensecategories.first;
+                  _selectedCategory = (isIncome ? _incomeCategories : _expenseCategories).first;
                 });
               },
               borderRadius: BorderRadius.circular(8),
@@ -193,7 +205,6 @@ class _QuickAddScreenState extends State<QuickAddScreen> {
               ],
             ),
             SizedBox(height: 20),
-
             Text('날짜', style: NoteTextStyles.subHeader),
             SizedBox(height: 4),
             GestureDetector(
@@ -215,11 +226,24 @@ class _QuickAddScreenState extends State<QuickAddScreen> {
               ),
             ),
             SizedBox(height: 16),
-
             _buildInput('금액', _amountController, isNumber: true),
             SizedBox(height: 16),
-
-            Text('카테고리', style: NoteTextStyles.subHeader),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text('카테고리', style: NoteTextStyles.subHeader),
+                TextButton.icon(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => CategorySettingScreen()),
+                    ).then((_) => _loadCategories());
+                  },
+                  icon: Icon(Icons.settings, size: 18, color: AppColors.primary),
+                  label: Text('설정', style: TextStyle(fontSize: 14, color: AppColors.primary)),
+                ),
+              ],
+            ),
             SizedBox(height: 4),
             Container(
               decoration: NoteDecorations.inputBox,
@@ -228,7 +252,7 @@ class _QuickAddScreenState extends State<QuickAddScreen> {
                 child: DropdownButton<String>(
                   value: _selectedCategory,
                   isExpanded: true,
-                  items: (isIncome ? _incomecategories : _expensecategories).map((String value) {
+                  items: (isIncome ? _incomeCategories : _expenseCategories).map((String value) {
                     return DropdownMenuItem<String>(
                       value: value,
                       child: Text(value),

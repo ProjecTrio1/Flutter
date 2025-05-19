@@ -23,7 +23,7 @@ class MyApp extends StatelessWidget {
       ],
       supportedLocales: const [Locale('ko', 'KR')],
       debugShowCheckedModeBanner: false,
-      home: LoginHome(), // 또는 Navigation()
+      home: Navigation(), // 또는 Navigation()
     );
   }
 }
