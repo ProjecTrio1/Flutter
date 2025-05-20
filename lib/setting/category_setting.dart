@@ -70,12 +70,25 @@ class _CategorySettingScreenState extends State<CategorySettingScreen> {
 
   void _deleteCategory(String cat) {
     final currentList = isExpenseTab ? _expenseCategories : _incomeCategories;
+    final defaultList = isExpenseTab
+        ? CategoryStorage.defaultExpense
+        : CategoryStorage.defaultIncome;
+
+    // 기본 카테고리는 삭제 불가
+    if (defaultList.contains(cat)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('기본 카테고리는 삭제할 수 없습니다.')),
+      );
+      return;
+    }
+
     if (currentList.length == 1) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('최소 1개의 카테고리는 유지해야 합니다.')),
       );
       return;
     }
+
     setState(() {
       currentList.remove(cat);
       if (isExpenseTab) _monthlyLimits.remove(cat);
@@ -205,10 +218,13 @@ class _CategorySettingScreenState extends State<CategorySettingScreen> {
                               icon: Icon(Icons.settings),
                               onPressed: () => _showLimitDialog(category),
                             ),
-                          IconButton(
-                            icon: Icon(Icons.delete, color: Colors.red),
-                            onPressed: () => _deleteCategory(category),
-                          ),
+                          if (!(isExpenseTab
+                              ? CategoryStorage.defaultExpense.contains(category)
+                              : CategoryStorage.defaultIncome.contains(category)))
+                            IconButton(
+                              icon: Icon(Icons.delete, color: Colors.red),
+                              onPressed: () => _deleteCategory(category),
+                            ),
                         ],
                       ),
                     ),
