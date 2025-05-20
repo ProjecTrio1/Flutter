@@ -273,6 +273,7 @@ class _QuickAddScreenState extends State<QuickAddScreen> {
             SizedBox(height: 16),
             _buildInput('메모 (선택)', _memoController),
             SizedBox(height: 24),
+            if (!isIncome)...[
             SwitchListTile(
               title: Text('정기 지출로 등록'),
               value: isRegularExpense,
@@ -291,6 +292,7 @@ class _QuickAddScreenState extends State<QuickAddScreen> {
               inactiveThumbColor: Colors.grey.shade400,
               inactiveTrackColor: Colors.grey.shade300,
             ),
+            ],
             SizedBox(height: 24),
             ElevatedButton(
               onPressed: submitNoteAdd,

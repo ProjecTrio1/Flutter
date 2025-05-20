@@ -66,13 +66,14 @@ class _NoteListScreenState extends State<NoteListScreen> {
       });
     }
   }
-  Future<void> _deleteNoteById(int id) async{
+
+  Future<void> _deleteNoteById(int id) async {
     final url = Uri.parse('http://10.0.2.2:8080/note/delete/$id');
     final response = await http.get(url);
 
     if (response.statusCode == 204) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('삭제되었습니다.')));
-      _fetchNotesForList(widget.year, widget.month); // 목록 새로고침
+      _fetchNotesForList(widget.year, widget.month);
     } else {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('삭제 실패')));
     }
@@ -86,7 +87,7 @@ class _NoteListScreenState extends State<NoteListScreen> {
     final category = note['category'] ?? '';
     final content = note['content'] ?? '';
     final memo = note['memo'] ?? '';
-    final int? id = note['id']; //삭제용 ID
+    final int? id = note['id'];
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
@@ -106,29 +107,34 @@ class _NoteListScreenState extends State<NoteListScreen> {
                     '${isIncome ? '+' : '-'}${formatter.format(amount)}원',
                     style: isIncome ? NoteTextStyles.income : NoteTextStyles.expense,
                   ),
-                  if(id!=null)
+                  if (id != null)
                     IconButton(
-                      icon: Icon(Icons.delete, color: Colors.red,),
-                      onPressed: (){
-                        showDialog(context: context, builder: (_) => AlertDialog(
-                          title: Text('삭제 확인'),
-                          content: Text('이 소비 내역을 삭제하시겠습니까?'),
-                          actions: [TextButton(onPressed: () => Navigator.pop(context), child: Text('취소')),
-                            TextButton(onPressed: () {
-                              Navigator.pop(context);
-                              _deleteNoteById(id);
-                            }, child: Text('삭제'),
-                            ),
-                          ],
-                        ));
+                      icon: Icon(Icons.delete, color: Colors.red),
+                      onPressed: () {
+                        showDialog(
+                          context: context,
+                          builder: (_) => AlertDialog(
+                            title: Text('삭제 확인'),
+                            content: Text('이 소비 내역을 삭제하시겠습니까?'),
+                            actions: [
+                              TextButton(onPressed: () => Navigator.pop(context), child: Text('취소')),
+                              TextButton(
+                                onPressed: () {
+                                  Navigator.pop(context);
+                                  _deleteNoteById(id);
+                                },
+                                child: Text('삭제'),
+                              ),
+                            ],
+                          ),
+                        );
                       },
                     )
                 ],
               ),
             ],
           ),
-          if (memo.isNotEmpty)
-            Text(memo, style: NoteTextStyles.subtitle),
+          if (memo.isNotEmpty) Text(memo, style: NoteTextStyles.subtitle),
           Align(
             alignment: Alignment.bottomRight,
             child: Text(time, style: NoteTextStyles.time),
@@ -140,48 +146,111 @@ class _NoteListScreenState extends State<NoteListScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final sortedDates = _groupedNotes.keys.toList()..sort((a, b) => b.compareTo(a));
     final formatter = NumberFormat('#,###');
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Expanded(
-          child: ListView.builder(
-            itemCount: sortedDates.length,
-            itemBuilder: (context, index) {
-              final date = sortedDates[index];
-              final notes = _groupedNotes[date] ?? [];
-              final net = notes.fold<int>(0, (sum, e) {
-                final amount = (e['amount'] ?? 0) as num;
-                return sum + ((e['isIncome'] ?? false) ? amount.toInt() : -amount.toInt());
-              });
+    final sortedDates = _groupedNotes.keys.toList()..sort((a, b) => b.compareTo(a));
 
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(DateFormat('M월 d일 (E)', 'ko_KR').format(date),
-                            style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
-                        Text(
-                          '${net >= 0 ? '+' : '-'}${formatter.format(net.abs())}원',
-                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
-                        ),
-                      ],
-                    ),
-                  ),
-                  ...notes.map((note) => _buildNoteItem(note)).toList(),
-                  Divider(),
-                ],
-              );
-            },
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('${widget.year}년 ${widget.month}월 전체 내역'),
+      ),
+      body: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: NoteDecorations.summaryBox,
+            child: Column(
+              children: [
+                Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                  Text('총수입', style: NoteTextStyles.total),
+                  Text('${formatter.format(_monthlyIncome)}원', style: NoteTextStyles.income),
+                ]),
+                const SizedBox(height: 6),
+                Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                  Text('총지출', style: NoteTextStyles.total),
+                  Text('${formatter.format(_monthlyExpense)}원', style: NoteTextStyles.expense),
+                ]),
+              ],
+            ),
           ),
-        ),
-      ],
+          const SizedBox(height: 8),
+          Expanded(
+            child: ListView.builder(
+              itemCount: sortedDates.length,
+              itemBuilder: (context, index) {
+                final date = sortedDates[index];
+                final notes = _groupedNotes[date] ?? [];
+
+                final weekdayStr = DateFormat('M월 d일 (E)', 'ko_KR').format(date);
+                final net = notes.fold<int>(0, (sum, e) {
+                  final amount = (e['amount'] ?? 0) as num;
+                  return sum + ((e['isIncome'] ?? false) ? amount.toInt() : -amount.toInt());
+                });
+
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(weekdayStr, style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+                          Text(
+                            '${net >= 0 ? '+' : '-'}${formatter.format(net.abs())}원',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                              color: net >= 0 ? AppColors.incomeBlue : AppColors.expenseRed,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    ...notes.map((note) {
+                      final isIncome = note['isIncome'] ?? false;
+                      final amount = note['amount'] ?? 0;
+                      final category = note['category'] ?? '';
+                      final content = note['content'] ?? '';
+                      final time = DateFormat('HH:mm').format(DateTime.parse(note['createdAt']).toLocal());
+
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(category, style: NoteTextStyles.subtitle),
+                                  Text(content, style: NoteTextStyles.subHeader),
+                                ],
+                              ),
+                            ),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                Text(
+                                  '${isIncome ? '+' : '-'}${formatter.format(amount)}원',
+                                  style: isIncome ? NoteTextStyles.income : NoteTextStyles.expense,
+                                ),
+                                const SizedBox(height: 2),
+                                Text(time, style: NoteTextStyles.time),
+                              ],
+                            ),
+                          ],
+                        ),
+                      );
+                    }).toList(),
+                    const Divider(thickness: 1),
+                  ],
+                );
+              },
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

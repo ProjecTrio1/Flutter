@@ -5,8 +5,6 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:table_calendar/table_calendar.dart';
 
-import 'note_list.dart';
-import 'note_date.dart';
 import '../style/note_style.dart';
 import '../style/main_style.dart';
 
@@ -83,10 +81,6 @@ class _NoteMonthScreenState extends State<NoteMonthScreen> {
       _selectedDay = selected;
       _focusedDay = focused;
     });
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => NoteDateScreen(selectedDate: selected)),
-    );
   }
 
   void _toggleView() {
@@ -97,7 +91,6 @@ class _NoteMonthScreenState extends State<NoteMonthScreen> {
 
   void _showMonthSelector() async {
     int tempYear = _selectedYear;
-
     await showDialog(
       context: context,
       builder: (context) {
@@ -151,6 +144,103 @@ class _NoteMonthScreenState extends State<NoteMonthScreen> {
     );
   }
 
+  Widget _buildCalendarCell(BuildContext context, DateTime day, BoxConstraints constraints,
+      {bool isToday = false}) {
+    final events = _getEventsForDay(day);
+    final List<Map<String, dynamic>> mappedEvents = events.whereType<Map<String, dynamic>>().toList();
+
+    int safeParseAmount(Map<String, dynamic> e) {
+      final value = e['amount'];
+      if (value is int) return value;
+      if (value is String) return int.tryParse(value) ?? 0;
+      if (value is double) return value.toInt();
+      return 0;
+    }
+
+    final income = mappedEvents.where((e) => e['isIncome'] == true).fold<int>(0, (sum, e) => sum + safeParseAmount(e));
+    final expense = mappedEvents.where((e) => e['isIncome'] == false).fold<int>(0, (sum, e) => sum + safeParseAmount(e));
+    final net = income - expense;
+    final formatter = NumberFormat('#,###');
+
+    return Container(
+      height: constraints.maxHeight / 6.5,
+      width: constraints.maxWidth / 7,
+      padding: const EdgeInsets.all(6),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          Align(
+            alignment: Alignment.topRight,
+            child: Text(
+              '${day.day}',
+              style: TextStyle(
+                fontSize: 12,
+                color: isToday ? AppColors.primary.withOpacity(0.8) : AppColors.textSecondary,
+              ),
+            ),
+          ),
+          const SizedBox(height: 2),
+          if (income > 0)
+            Text('+${formatter.format(income)}', style: TextStyle(fontSize: 9, color: AppColors.incomeBlue)),
+          if (expense > 0)
+            Text('-${formatter.format(expense)}', style: TextStyle(fontSize: 9, color: AppColors.expenseRed)),
+          Text('${net >= 0 ? '+' : '-'}${formatter.format(net.abs())}',
+              style: TextStyle(fontSize: 9, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildListView() {
+    final formatter = NumberFormat('#,###');
+    final flatNotes = _groupedNotes.entries.expand((e) => e.value).toList()
+      ..sort((a, b) {
+        final ad = DateTime.parse(a['createdAt']).toLocal();
+        final bd = DateTime.parse(b['createdAt']).toLocal();
+        return bd.compareTo(ad);
+      });
+
+    return ListView.builder(
+      itemCount: flatNotes.length,
+      itemBuilder: (context, index) {
+        final note = flatNotes[index];
+        final time = DateFormat('HH:mm').format(DateTime.parse(note['createdAt']).toLocal());
+        final isIncome = note['isIncome'] ?? false;
+        final amount = note['amount'] ?? 0;
+        final category = note['category'] ?? '';
+        final content = note['content'] ?? '';
+        final memo = note['memo'] ?? '';
+
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          margin: const EdgeInsets.only(bottom: 4),
+          decoration: NoteDecorations.card,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(category, style: NoteTextStyles.subtitle),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(content, style: NoteTextStyles.subHeader),
+                  Text(
+                    '${isIncome ? '+' : '-'}${formatter.format(amount)}원',
+                    style: isIncome ? NoteTextStyles.income : NoteTextStyles.expense,
+                  ),
+                ],
+              ),
+              if (memo.isNotEmpty) Text(memo, style: NoteTextStyles.subtitle),
+              Align(
+                alignment: Alignment.bottomRight,
+                child: Text(time, style: NoteTextStyles.time),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final formatter = NumberFormat('#,###');
@@ -169,7 +259,7 @@ class _NoteMonthScreenState extends State<NoteMonthScreen> {
         ),
         actions: [
           IconButton(
-            icon: Icon(isCalendarView ? Icons.list : Icons.calendar_month),
+            icon: Icon(isCalendarView ? Icons.view_list : Icons.calendar_month),
             onPressed: _toggleView,
           ),
         ],
@@ -187,7 +277,7 @@ class _NoteMonthScreenState extends State<NoteMonthScreen> {
                     Text('총수입', style: NoteTextStyles.total),
                     Text('${formatter.format(_monthlyIncome)}원', style: NoteTextStyles.income),
                   ]),
-                  SizedBox(height: 6),
+                  const SizedBox(height: 6),
                   Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
                     Text('총지출', style: NoteTextStyles.total),
                     Text('${formatter.format(_monthlyExpense)}원', style: NoteTextStyles.expense),
@@ -195,59 +285,42 @@ class _NoteMonthScreenState extends State<NoteMonthScreen> {
                 ],
               ),
             ),
-            SizedBox(height: 16),
+            const SizedBox(height: 16),
             Expanded(
               child: isCalendarView
-                  ? TableCalendar(
-                firstDay: DateTime(2000),
-                lastDay: DateTime(2100),
-                focusedDay: _focusedDay,
-                selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
-                onDaySelected: _onDaySelected,
-                eventLoader: _getEventsForDay,
-                calendarStyle: CalendarStyle(
-                  todayDecoration: BoxDecoration(color: AppColors.primary, shape: BoxShape.circle),
-                  selectedDecoration: BoxDecoration(color: AppColors.expenseRed, shape: BoxShape.circle),
-                ),
-                calendarBuilders: CalendarBuilders(
-                  markerBuilder: (context, day, events) {
-                    if (events.isEmpty) return const SizedBox();
-
-                    final List<Map<String, dynamic>> mappedEvents =
-                    events.whereType<Map<String, dynamic>>().toList();
-
-                    int safeParseAmount(Map<String, dynamic> e) {
-                      final value = e['amount'];
-                      if (value is int) return value;
-                      if (value is String) return int.tryParse(value) ?? 0;
-                      if (value is double) return value.toInt();
-                      return 0;
-                    }
-
-                    final income = mappedEvents
-                        .where((e) => e['isIncome'] == true)
-                        .fold<int>(0, (sum, e) => sum + safeParseAmount(e));
-                    final expense = mappedEvents
-                        .where((e) => e['isIncome'] == false)
-                        .fold<int>(0, (sum, e) => sum + safeParseAmount(e));
-                    final net = income - expense;
-
-                    return Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        if (income > 0)
-                          Text('+${formatter.format(income)}', style: TextStyle(color: AppColors.incomeBlue, fontSize: 10)),
-                        if (expense > 0)
-                          Text('-${formatter.format(expense)}', style: TextStyle(color: AppColors.expenseRed, fontSize: 10)),
-                        Text('${net >= 0 ? '+' : '-'}${formatter.format(net.abs())}', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
-                      ],
-                    );
-                  },
-
-
-                ),
+                  ? LayoutBuilder(
+                builder: (context, constraints) {
+                  return TableCalendar(
+                    firstDay: DateTime(2000),
+                    lastDay: DateTime(2100),
+                    focusedDay: _focusedDay,
+                    selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
+                    onDaySelected: _onDaySelected,
+                    eventLoader: _getEventsForDay,
+                    calendarFormat: CalendarFormat.month,
+                    availableCalendarFormats: const {
+                      CalendarFormat.month: '',
+                    },
+                    rowHeight: constraints.maxHeight / 6.5,
+                    calendarStyle: CalendarStyle(
+                      todayDecoration: BoxDecoration(),
+                      selectedDecoration: BoxDecoration(),
+                      todayTextStyle: TextStyle(),
+                      selectedTextStyle: TextStyle(),
+                    ),
+                    calendarBuilders: CalendarBuilders(
+                      defaultBuilder: (context, day, focusedDay) =>
+                          _buildCalendarCell(context, day, constraints, isToday: false),
+                      todayBuilder: (context, day, focusedDay) =>
+                          _buildCalendarCell(context, day, constraints, isToday: true),
+                      selectedBuilder: (context, day, focusedDay) =>
+                          _buildCalendarCell(context, day, constraints, isToday: false),
+                      markerBuilder: (context, date, events) => const SizedBox(),
+                    ),
+                  );
+                },
               )
-                  : NoteListScreen(year: _selectedYear, month: _selectedMonth),
+                  : _buildListView(),
             ),
           ],
         ),
