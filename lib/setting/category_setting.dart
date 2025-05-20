@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../style/main_style.dart';
 import '../style/note_style.dart';
+import 'category_helper.dart';
 
 class CategorySettingScreen extends StatefulWidget {
   const CategorySettingScreen({Key? key}) : super(key: key);
@@ -11,9 +11,13 @@ class CategorySettingScreen extends StatefulWidget {
 }
 
 class _CategorySettingScreenState extends State<CategorySettingScreen> {
-  final List<String> _categories = [];
+  final List<String> _expenseCategories = [];
+  final List<String> _incomeCategories = [];
   final Map<String, int> _monthlyLimits = {};
   final TextEditingController _categoryController = TextEditingController();
+
+  bool isExpenseTab = false; // 수입이 왼쪽이 되도록 false로 시작
+  bool _isLoading = true;
 
   @override
   void initState() {
@@ -22,32 +26,42 @@ class _CategorySettingScreenState extends State<CategorySettingScreen> {
   }
 
   Future<void> _loadCategories() async {
-    final prefs = await SharedPreferences.getInstance();
-    final saved = prefs.getStringList('expenseCategories');
-    if (saved != null) {
+    final expense = await CategoryStorage.loadExpenseCategories();
+    final income = await CategoryStorage.loadIncomeCategories();
+    final limits = <String, int>{};
+
+    for (var cat in expense) {
+      limits[cat] = await CategoryStorage.getLimit(cat);
+    }
+
+    if (mounted) {
       setState(() {
-        _categories.addAll(saved);
-        for (var cat in saved) {
-          _monthlyLimits[cat] = prefs.getInt('limit_$cat') ?? 0;
-        }
+        _expenseCategories
+          ..clear()
+          ..addAll(expense);
+        _incomeCategories
+          ..clear()
+          ..addAll(income);
+        _monthlyLimits
+          ..clear()
+          ..addAll(limits);
+        _isLoading = false;
       });
     }
   }
 
   Future<void> _saveCategories() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setStringList('expenseCategories', _categories);
-    for (var cat in _categories) {
-      await prefs.setInt('limit_$cat', _monthlyLimits[cat] ?? 0);
-    }
+    await CategoryStorage.saveExpenseCategories(_expenseCategories, _monthlyLimits);
+    await CategoryStorage.saveIncomeCategories(_incomeCategories);
   }
 
   void _addCategory() {
     final newCategory = _categoryController.text.trim();
-    if (newCategory.isNotEmpty && !_categories.contains(newCategory)) {
+    final currentList = isExpenseTab ? _expenseCategories : _incomeCategories;
+    if (newCategory.isNotEmpty && !currentList.contains(newCategory)) {
       setState(() {
-        _categories.add(newCategory);
-        _monthlyLimits[newCategory] = 0;
+        currentList.add(newCategory);
+        if (isExpenseTab) _monthlyLimits[newCategory] = 0;
         _categoryController.clear();
       });
       _saveCategories();
@@ -55,67 +69,98 @@ class _CategorySettingScreenState extends State<CategorySettingScreen> {
   }
 
   void _deleteCategory(String cat) {
+    final currentList = isExpenseTab ? _expenseCategories : _incomeCategories;
+    if (currentList.length == 1) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('최소 1개의 카테고리는 유지해야 합니다.')),
+      );
+      return;
+    }
     setState(() {
-      _categories.remove(cat);
-      _monthlyLimits.remove(cat);
+      currentList.remove(cat);
+      if (isExpenseTab) _monthlyLimits.remove(cat);
     });
     _saveCategories();
   }
 
   void _showLimitDialog(String category) {
-    int tempLimit = _monthlyLimits[category] ?? 0;
+    final TextEditingController limitController =
+    TextEditingController(text: (_monthlyLimits[category] ?? 0).toString());
 
     showDialog(
       context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: Text('$category - 월간 지출 한도'),
-          content: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              IconButton(
-                icon: Icon(Icons.remove),
-                onPressed: () {
-                  setState(() {
-                    if (tempLimit >= 1000) tempLimit -= 1000;
-                  });
-                },
-              ),
-              Text('$tempLimit원', style: AppTextStyles.bold),
-              IconButton(
-                icon: Icon(Icons.add),
-                onPressed: () {
-                  setState(() => tempLimit += 1000);
-                },
-              ),
-            ],
+      builder: (context) => AlertDialog(
+        title: Text('$category - 월간 지출 한도'),
+        content: TextField(
+          controller: limitController,
+          keyboardType: TextInputType.number,
+          decoration: InputDecoration(
+            hintText: '숫자 입력 (원)',
+            border: OutlineInputBorder(),
           ),
-          actions: [
-            TextButton(
-              onPressed: () {
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              final int? parsed = int.tryParse(limitController.text.trim());
+              if (parsed != null) {
                 setState(() {
-                  _monthlyLimits[category] = tempLimit;
+                  _monthlyLimits[category] = parsed;
                 });
-                _saveCategories();
-                Navigator.of(context).pop();
-              },
-              child: Text('확인'),
-            ),
-          ],
-        );
-      },
+                CategoryStorage.setLimit(category, parsed);
+              }
+              Navigator.of(context).pop();
+            },
+            child: Text('확인'),
+          ),
+        ],
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final currentList = isExpenseTab ? _expenseCategories : _incomeCategories;
+
     return Scaffold(
       backgroundColor: AppColors.surface,
       appBar: AppBar(title: Text('카테고리 설정')),
-      body: Padding(
+      body: _isLoading
+          ? Center(child: CircularProgressIndicator())
+          : Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                border: Border.all(color: AppColors.borderGray),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: ToggleButtons(
+                isSelected: [!isExpenseTab, isExpenseTab],
+                onPressed: (index) {
+                  setState(() => isExpenseTab = index == 1);
+                },
+                borderRadius: BorderRadius.circular(8),
+                fillColor: isExpenseTab
+                    ? AppColors.expenseRed
+                    : AppColors.incomeBlue,
+                selectedColor: Colors.white,
+                color: AppColors.textSecondary,
+                children: [
+                  Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 24),
+                    child: Text('수입'),
+                  ),
+                  Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 24),
+                    child: Text('지출'),
+                  ),
+                ],
+              ),
+            ),
+            SizedBox(height: 16),
             Row(
               children: [
                 Expanded(
@@ -139,21 +184,27 @@ class _CategorySettingScreenState extends State<CategorySettingScreen> {
             ),
             SizedBox(height: 24),
             Expanded(
-              child: ListView.builder(
-                itemCount: _categories.length,
+              child: currentList.isEmpty
+                  ? Center(child: Text('카테고리가 없습니다.'))
+                  : ListView.builder(
+                itemCount: currentList.length,
                 itemBuilder: (context, index) {
-                  final category = _categories[index];
+                  final category = currentList[index];
                   return Card(
                     child: ListTile(
                       title: Text(category, style: NoteTextStyles.subHeader),
-                      subtitle: Text('월 한도: ${_monthlyLimits[category]}원', style: NoteTextStyles.subtitle),
+                      subtitle: isExpenseTab
+                          ? Text('월 한도: ${_monthlyLimits[category]}원',
+                          style: NoteTextStyles.subtitle)
+                          : null,
                       trailing: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          IconButton(
-                            icon: Icon(Icons.settings),
-                            onPressed: () => _showLimitDialog(category),
-                          ),
+                          if (isExpenseTab)
+                            IconButton(
+                              icon: Icon(Icons.settings),
+                              onPressed: () => _showLimitDialog(category),
+                            ),
                           IconButton(
                             icon: Icon(Icons.delete, color: Colors.red),
                             onPressed: () => _deleteCategory(category),
@@ -164,11 +215,10 @@ class _CategorySettingScreenState extends State<CategorySettingScreen> {
                   );
                 },
               ),
-            ),
+            )
           ],
         ),
       ),
     );
   }
 }
-

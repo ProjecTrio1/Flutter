@@ -78,7 +78,7 @@ class NoteDecorations {
   static final ButtonStyle filledButton = ElevatedButton.styleFrom(
     backgroundColor: AppColors.primary,
     foregroundColor: Colors.white,
-    minimumSize: Size(double.infinity, 48),
+    minimumSize: Size(0, 48),
     textStyle: TextStyle(
       fontFamily: 'SpoqaHanSansNeo',
       fontWeight: FontWeight.bold,
