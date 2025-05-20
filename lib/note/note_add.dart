@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../style/note_style.dart';
 import '../style/main_style.dart';
 import '../setting/category_setting.dart';
+import '../setting/category_helper.dart';
 
 class QuickAddScreen extends StatefulWidget {
   @override
@@ -23,10 +24,8 @@ class _QuickAddScreenState extends State<QuickAddScreen> {
   bool notifyOverspend = false;
   bool isIncome = true;
 
-  List<String> _expenseCategories = [
-    '식비', '카페/디저트', '교통/차량', '쇼핑/생활/뷰티', '건강/의료', '교육/학원', '문화/여가', '기타'
-  ];
-  List<String> _incomeCategories = ['월급', '용돈', '기타'];
+  List<String> _expenseCategories = [];
+  List<String> _incomeCategories = [];
 
   @override
   void initState() {
@@ -36,11 +35,14 @@ class _QuickAddScreenState extends State<QuickAddScreen> {
   }
 
   Future<void> _loadCategories() async {
-    final prefs = await SharedPreferences.getInstance();
-    final loaded = prefs.getStringList('expenseCategories');
-    if (loaded != null && loaded.isNotEmpty) {
-      setState(() => _expenseCategories = loaded);
-    }
+    final expense = await CategoryStorage.loadExpenseCategories();
+    final income = await CategoryStorage.loadIncomeCategories();
+
+    setState(() {
+      _expenseCategories = expense;
+      _incomeCategories = income;
+      _selectedCategory ??= isIncome ? _incomeCategories.first : _expenseCategories.first;
+    });
   }
 
   Future<void> _selectDate(BuildContext context) async {
@@ -144,7 +146,7 @@ class _QuickAddScreenState extends State<QuickAddScreen> {
       }
     } else {
       print("에러 상태코드 : ${response.statusCode}");
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('저장 실패...')));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('저장 실패')));
     }
   }
 
@@ -267,13 +269,10 @@ class _QuickAddScreenState extends State<QuickAddScreen> {
               ),
             ),
             SizedBox(height: 16),
-
             _buildInput('내용', _contentController),
             SizedBox(height: 16),
-
             _buildInput('메모 (선택)', _memoController),
             SizedBox(height: 24),
-
             SwitchListTile(
               title: Text('정기 지출로 등록'),
               value: isRegularExpense,
@@ -293,7 +292,6 @@ class _QuickAddScreenState extends State<QuickAddScreen> {
               inactiveTrackColor: Colors.grey.shade300,
             ),
             SizedBox(height: 24),
-
             ElevatedButton(
               onPressed: submitNoteAdd,
               child: Text('저장'),
