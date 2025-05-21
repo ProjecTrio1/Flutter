@@ -92,7 +92,7 @@ class _LoginHomeState extends State<LoginHome> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('로그인/회원가입')),
+      appBar: AppBar(title: const Text('로그인')),
       body: Padding(
         padding: const EdgeInsets.all(20.0),
         child: Column(
@@ -106,6 +106,7 @@ class _LoginHomeState extends State<LoginHome> {
               decoration: const InputDecoration(labelText: '이메일'),
               keyboardType: TextInputType.emailAddress,
             ),
+            SizedBox(height: 12),
             TextField(
               controller: _passwordController,
               obscureText: !_isPasswordVisible,
@@ -122,8 +123,8 @@ class _LoginHomeState extends State<LoginHome> {
                 ),
               ),
             ),
-            const SizedBox(height: 20),
-            SizedBox(height: 20),
+            const SizedBox(height: 10),
+            SizedBox(height: 10),
             ElevatedButton(onPressed: _submitForm, child: Text('로그인')),
             TextButton(
               onPressed: () {

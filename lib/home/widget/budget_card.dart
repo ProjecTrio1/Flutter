@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../style/main_style.dart';
 
 class BudgetCard extends StatelessWidget {
   final String title;
@@ -18,7 +19,7 @@ class BudgetCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: EdgeInsets.all(16),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: backgroundColor,
         borderRadius: BorderRadius.circular(12),
@@ -26,11 +27,11 @@ class BudgetCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
-          Text(title, style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-          SizedBox(height: 8),
-          Text(value, style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
-          SizedBox(height: 4),
-          Text(sub, style: TextStyle(color: Colors.white70)),
+          Text(title, style: AppTextStyles.buttonText.copyWith(fontWeight: FontWeight.w600)),
+          const SizedBox(height: 8),
+          Text(value, style: AppTextStyles.buttonText.copyWith(fontSize: 24)),
+          const SizedBox(height: 4),
+          Text(sub, style: AppTextStyles.body.copyWith(color: Colors.white70)),
         ],
       ),
     );

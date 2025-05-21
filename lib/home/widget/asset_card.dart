@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../style/main_style.dart';
 
 class AssetCard extends StatelessWidget {
   final int totalAsset;
@@ -12,36 +13,28 @@ class AssetCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('자산', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            SizedBox(height: 8),
-            Text('${formatCurrency(totalAsset)}원',
-                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-            SizedBox(height: 12),
-            _buildRow('어디은행', '103,012원'),
-            _buildRow('어디은행', '103,012원'),
-            _buildRow('카드결제대금', '-103,012원'),
-          ],
-        ),
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black12,
+            blurRadius: 4,
+            offset: Offset(0, 2),
+          ),
+        ],
       ),
-    );
-  }
-
-  Widget _buildRow(String name, String amount) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2.0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Text(name, style: TextStyle(fontSize: 14)),
-          Text(amount, style: TextStyle(fontSize: 14)),
+          Text('자산', style: AppTextStyles.title),
+          const SizedBox(height: 8),
+          Text(
+            '${formatCurrency(totalAsset)}원',
+            style: AppTextStyles.bold.copyWith(fontSize: 26),
+          ),
         ],
       ),
     );

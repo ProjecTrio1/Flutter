@@ -154,6 +154,7 @@ class _SignupHomeState extends State<SignupHome> {
                 });
               },
             ),
+            SizedBox(height: 12),
             TextField(
               controller: _passwordController,
               decoration: InputDecoration(
