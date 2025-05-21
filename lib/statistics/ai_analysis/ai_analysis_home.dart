@@ -111,8 +111,28 @@ class _AIAnalysisHomePageState extends State<AIAnalysisHomePage>{
                             trailing: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                IconButton(onPressed: () => sendFeedback(item['id'],true), icon: Icon(Icons.thumb_up),),
-                                IconButton(onPressed: () => sendFeedback(item['id'],false), icon: Icon(Icons.thumb_down),),
+                                IconButton(
+                                  onPressed: item['userFeedback'] == null
+                                    ? () async {
+                                    await sendFeedback(item['id'], true);
+                                    setState(() {
+                                      item['userFeedback'] =true;
+                                    });
+                                    }
+                                    :null,
+                                  icon: Icon(Icons.thumb_up),
+                                ),
+                                IconButton(
+                                  onPressed: item['userFeedback'] == null
+                                      ? () async {
+                                    await sendFeedback(item['id'], false);
+                                    setState(() {
+                                      item['userFeedback'] =false;
+                                    });
+                                  }
+                                      :null,
+                                  icon: Icon(Icons.thumb_down),
+                                ),
                               ],
                             ),
                           ),
