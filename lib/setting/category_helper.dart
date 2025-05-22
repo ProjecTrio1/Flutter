@@ -50,4 +50,15 @@ class CategoryStorage {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt('limit_$category', value);
   }
+
+  static Future<bool> getLimitNotify(String category) async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool('limit_notify_$category') ?? true;
+  }
+
+  static Future<void> setLimitNotify(String category, bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('limit_notify_$category', value);
+  }
+
 }

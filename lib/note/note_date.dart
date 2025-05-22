@@ -7,6 +7,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../style/note_style.dart';
 import '../style/main_style.dart';
+import 'note_add.dart';
 
 class NoteDateScreen extends StatefulWidget {
   final DateTime selectedDate;
@@ -124,35 +125,42 @@ class _NoteDateScreenState extends State<NoteDateScreen> {
                   final date = DateTime.parse(item['createdAt']).toLocal();
                   final timeStr = timeFormat.format(date);
 
-                  return Container(
-                    margin: const EdgeInsets.symmetric(vertical: 6),
-                    decoration: NoteDecorations.card,
-                    child: Padding(
-                      padding: const EdgeInsets.all(12.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(category, style: NoteTextStyles.subtitle),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(content, style: NoteTextStyles.subHeader),
-                              Text(
-                                '${isIncome ? "+" : "-"}${formatter.format(amount)}원',
-                                style: isIncome
-                                    ? NoteTextStyles.income
-                                    : NoteTextStyles.expense,
-                              ),
-                            ],
-                          ),
-                          SizedBox(height: 4),
-                          if (memo.isNotEmpty)
-                            Text(memo, style: NoteTextStyles.subtitle),
-                          Align(
-                            alignment: Alignment.bottomRight,
-                            child: Text(timeStr, style: NoteTextStyles.time),
-                          ),
-                        ],
+                  return GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => QuickAddScreen(existingNote: item),
+                        ),
+                      );
+                    },
+                    child: Container(
+                      margin: const EdgeInsets.symmetric(vertical: 6),
+                      decoration: NoteDecorations.card,
+                      child: Padding(
+                        padding: const EdgeInsets.all(12.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(category, style: NoteTextStyles.subtitle),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(content, style: NoteTextStyles.subHeader),
+                                Text(
+                                  '${isIncome ? "+" : "-"}${formatter.format(amount)}원',
+                                  style: isIncome ? NoteTextStyles.income : NoteTextStyles.expense,
+                                ),
+                              ],
+                            ),
+                            if (memo.isNotEmpty)
+                              Text(memo, style: NoteTextStyles.subtitle),
+                            Align(
+                              alignment: Alignment.bottomRight,
+                              child: Text(timeStr, style: NoteTextStyles.time),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   );

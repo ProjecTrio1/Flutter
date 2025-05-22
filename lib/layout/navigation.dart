@@ -49,18 +49,13 @@ class _NavigationState extends State<Navigation> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text('LOGO', style: AppTextStyles.title),
-                Row(
-                  children: [
-                    Icon(Icons.notifications, color: AppColors.textPrimary),
-                    SizedBox(width: 12),
-                    Icon(Icons.menu, color: AppColors.textPrimary),
-                  ],
-                )
+                Icon(Icons.notifications, color: AppColors.textPrimary),
               ],
             ),
           ),
         ),
       ),
+
 
       // 현재 선택된 페이지
       body: _pages[_selectedIndex],

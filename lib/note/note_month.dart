@@ -5,6 +5,8 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:table_calendar/table_calendar.dart';
 
+import 'note_date.dart';
+import 'note_list_widget.dart';
 import '../style/note_style.dart';
 import '../style/main_style.dart';
 
@@ -22,7 +24,6 @@ class _NoteMonthScreenState extends State<NoteMonthScreen> {
   Map<DateTime, List<Map<String, dynamic>>> _groupedNotes = {};
   int _monthlyIncome = 0;
   int _monthlyExpense = 0;
-
   bool isCalendarView = true;
 
   @override
@@ -81,6 +82,13 @@ class _NoteMonthScreenState extends State<NoteMonthScreen> {
       _selectedDay = selected;
       _focusedDay = focused;
     });
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => NoteDateScreen(selectedDate: selected),
+      ),
+    );
   }
 
   void _toggleView() {
@@ -144,6 +152,18 @@ class _NoteMonthScreenState extends State<NoteMonthScreen> {
     );
   }
 
+  Future<void> _deleteNoteById(int id) async {
+    final url = Uri.parse('http://10.0.2.2:8080/note/delete/$id');
+    final response = await http.get(url);
+
+    if (response.statusCode == 204) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('삭제되었습니다.')));
+      _fetchMonthlyNotes();
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('삭제 실패')));
+    }
+  }
+
   Widget _buildCalendarCell(BuildContext context, DateTime day, BoxConstraints constraints,
       {bool isToday = false}) {
     final events = _getEventsForDay(day);
@@ -181,63 +201,13 @@ class _NoteMonthScreenState extends State<NoteMonthScreen> {
           ),
           const SizedBox(height: 2),
           if (income > 0)
-            Text('+${formatter.format(income)}', style: TextStyle(fontSize: 9, color: AppColors.incomeBlue)),
+            Text('+${formatter.format(income)}', style: TextStyle(fontSize: 7, color: AppColors.incomeBlue)),
           if (expense > 0)
-            Text('-${formatter.format(expense)}', style: TextStyle(fontSize: 9, color: AppColors.expenseRed)),
+            Text('-${formatter.format(expense)}', style: TextStyle(fontSize: 7, color: AppColors.expenseRed)),
           Text('${net >= 0 ? '+' : '-'}${formatter.format(net.abs())}',
-              style: TextStyle(fontSize: 9, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
+              style: TextStyle(fontSize: 7, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
         ],
       ),
-    );
-  }
-
-  Widget _buildListView() {
-    final formatter = NumberFormat('#,###');
-    final flatNotes = _groupedNotes.entries.expand((e) => e.value).toList()
-      ..sort((a, b) {
-        final ad = DateTime.parse(a['createdAt']).toLocal();
-        final bd = DateTime.parse(b['createdAt']).toLocal();
-        return bd.compareTo(ad);
-      });
-
-    return ListView.builder(
-      itemCount: flatNotes.length,
-      itemBuilder: (context, index) {
-        final note = flatNotes[index];
-        final time = DateFormat('HH:mm').format(DateTime.parse(note['createdAt']).toLocal());
-        final isIncome = note['isIncome'] ?? false;
-        final amount = note['amount'] ?? 0;
-        final category = note['category'] ?? '';
-        final content = note['content'] ?? '';
-        final memo = note['memo'] ?? '';
-
-        return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-          margin: const EdgeInsets.only(bottom: 4),
-          decoration: NoteDecorations.card,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(category, style: NoteTextStyles.subtitle),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(content, style: NoteTextStyles.subHeader),
-                  Text(
-                    '${isIncome ? '+' : '-'}${formatter.format(amount)}원',
-                    style: isIncome ? NoteTextStyles.income : NoteTextStyles.expense,
-                  ),
-                ],
-              ),
-              if (memo.isNotEmpty) Text(memo, style: NoteTextStyles.subtitle),
-              Align(
-                alignment: Alignment.bottomRight,
-                child: Text(time, style: NoteTextStyles.time),
-              ),
-            ],
-          ),
-        );
-      },
     );
   }
 
@@ -320,7 +290,10 @@ class _NoteMonthScreenState extends State<NoteMonthScreen> {
                   );
                 },
               )
-                  : _buildListView(),
+                  : NoteListWidget(
+                groupedNotes: _groupedNotes,
+                onDelete: _deleteNoteById,
+              ),
             ),
           ],
         ),

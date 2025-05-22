@@ -60,14 +60,11 @@ class NoteDecorations {
 
   static final BoxDecoration card = BoxDecoration(
     color: Colors.white,
-    borderRadius: BorderRadius.circular(10),
-    boxShadow: [
-      BoxShadow(
-        color: Colors.black12,
-        blurRadius: 4,
-        offset: Offset(0, 2),
-      ),
-    ],
+    borderRadius: BorderRadius.zero,
+    border: Border(
+      top: BorderSide(color: Color(0xFFEEEEEE), width: 1),
+      bottom: BorderSide(color: Color(0xFFEEEEEE), width: 1),
+    ),
   );
 
   static final BoxDecoration summaryBox = BoxDecoration(

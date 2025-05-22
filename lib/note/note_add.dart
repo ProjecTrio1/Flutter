@@ -1,14 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:http/http.dart' as http;
+import 'package:uuid/uuid.dart';
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../style/note_style.dart';
 import '../style/main_style.dart';
 import '../setting/category_setting.dart';
 import '../setting/category_helper.dart';
+import '../setting/reminder_manager.dart';
 
 class QuickAddScreen extends StatefulWidget {
+  final Map<String, dynamic>? existingNote;
+  const QuickAddScreen({this.existingNote});
   @override
   State<QuickAddScreen> createState() => _QuickAddScreenState();
 }
@@ -32,6 +36,16 @@ class _QuickAddScreenState extends State<QuickAddScreen> {
     super.initState();
     _createdAtController.text = DateFormat('yyyy-MM-dd HH:mm').format(_selectedDateTime);
     _loadCategories();
+    final note = widget.existingNote;
+    if (note != null) {
+      isIncome = note['isIncome'] == true;
+      _amountController.text = note['amount'].toString();
+      _contentController.text = note['content'] ?? '';
+      _memoController.text = note['memo'] ?? '';
+      _selectedDateTime = DateTime.parse(note['createdAt']).toLocal();
+      _createdAtController.text = DateFormat('yyyy-MM-dd HH:mm').format(_selectedDateTime);
+      _selectedCategory = note['category'];
+    }
   }
 
   Future<void> _loadCategories() async {
@@ -105,7 +119,9 @@ class _QuickAddScreenState extends State<QuickAddScreen> {
 
     final prefs = await SharedPreferences.getInstance();
     final userID = prefs.getInt('userID');
-    final url = Uri.parse('http://10.0.2.2:8080/note/add');
+    final url = widget.existingNote != null
+        ? Uri.parse('http://10.0.2.2:8080/note/update/${widget.existingNote!['id']}')
+        : Uri.parse('http://10.0.2.2:8080/note/add');
     final response = await http.post(
       url,
       headers: {'Content-Type': 'application/json'},
@@ -128,7 +144,22 @@ class _QuickAddScreenState extends State<QuickAddScreen> {
     if (response.statusCode == 200) {
       try {
         final decoded = jsonDecode(bodyString);
-        if (decoded is Map && decoded.containsKey('recommendation') && (decoded['recommendation'] as String).trim().isNotEmpty) {
+        final now = DateTime.now().toIso8601String();
+
+        // 1. notifyOverspend이 true일 경우, 로컬에도 저장
+        if (notifyOverspend && !isIncome) {
+          final uuid = Uuid().v4();
+          await ReminderManager.saveReminderItem(
+            id: uuid,
+            content: _contentController.text,
+            category: _selectedCategory ?? '',
+            amount: _amountController.text,
+            createdAt: now,
+          );
+        }
+        if (decoded is Map &&
+            decoded.containsKey('recommendation') &&
+            (decoded['recommendation'] as String).trim().isNotEmpty) {
           showDialog(
             context: context,
             builder: (_) => AlertDialog(
@@ -140,7 +171,9 @@ class _QuickAddScreenState extends State<QuickAddScreen> {
         } else {
           ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('저장 완료!')));
         }
+
         _resetForm();
+
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('서버 응답 오류')));
       }

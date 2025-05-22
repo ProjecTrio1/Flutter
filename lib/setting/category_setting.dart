@@ -14,6 +14,7 @@ class _CategorySettingScreenState extends State<CategorySettingScreen> {
   final List<String> _expenseCategories = [];
   final List<String> _incomeCategories = [];
   final Map<String, int> _monthlyLimits = {};
+  final Map<String, bool> _limitNotifications = {};
   final TextEditingController _categoryController = TextEditingController();
 
   bool isExpenseTab = false; // 수입이 왼쪽이 되도록 false로 시작
@@ -29,9 +30,11 @@ class _CategorySettingScreenState extends State<CategorySettingScreen> {
     final expense = await CategoryStorage.loadExpenseCategories();
     final income = await CategoryStorage.loadIncomeCategories();
     final limits = <String, int>{};
+    final notifies = <String, bool>{};
 
     for (var cat in expense) {
       limits[cat] = await CategoryStorage.getLimit(cat);
+      notifies[cat] = await CategoryStorage.getLimitNotify(cat);
     }
 
     if (mounted) {
@@ -45,6 +48,9 @@ class _CategorySettingScreenState extends State<CategorySettingScreen> {
         _monthlyLimits
           ..clear()
           ..addAll(limits);
+        _limitNotifications
+          ..clear()
+          ..addAll(notifies);
         _isLoading = false;
       });
     }
@@ -61,7 +67,10 @@ class _CategorySettingScreenState extends State<CategorySettingScreen> {
     if (newCategory.isNotEmpty && !currentList.contains(newCategory)) {
       setState(() {
         currentList.add(newCategory);
-        if (isExpenseTab) _monthlyLimits[newCategory] = 0;
+        if (isExpenseTab) {
+          _monthlyLimits[newCategory] = 0;
+          _limitNotifications[newCategory] = true;
+        }
         _categoryController.clear();
       });
       _saveCategories();
@@ -74,7 +83,6 @@ class _CategorySettingScreenState extends State<CategorySettingScreen> {
         ? CategoryStorage.defaultExpense
         : CategoryStorage.defaultIncome;
 
-    // 기본 카테고리는 삭제 불가
     if (defaultList.contains(cat)) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('기본 카테고리는 삭제할 수 없습니다.')),
@@ -91,42 +99,65 @@ class _CategorySettingScreenState extends State<CategorySettingScreen> {
 
     setState(() {
       currentList.remove(cat);
-      if (isExpenseTab) _monthlyLimits.remove(cat);
+      if (isExpenseTab) {
+        _monthlyLimits.remove(cat);
+        _limitNotifications.remove(cat);
+      }
     });
     _saveCategories();
   }
 
-  void _showLimitDialog(String category) {
+  void _showLimitDialog(String category) async {
     final TextEditingController limitController =
     TextEditingController(text: (_monthlyLimits[category] ?? 0).toString());
+    bool notifyValue = _limitNotifications[category] ?? true;
 
-    showDialog(
+    await showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text('$category - 월간 지출 한도'),
-        content: TextField(
-          controller: limitController,
-          keyboardType: TextInputType.number,
-          decoration: InputDecoration(
-            hintText: '숫자 입력 (원)',
-            border: OutlineInputBorder(),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setStateDialog) => AlertDialog(
+          title: Text('$category - 월간 지출 한도'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: limitController,
+                keyboardType: TextInputType.number,
+                decoration: InputDecoration(
+                  hintText: '숫자 입력 (원)',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              SizedBox(height: 16),
+              SwitchListTile(
+                title: Text('한도 초과 시 알림'),
+                value: notifyValue,
+                onChanged: (val) => setStateDialog(() => notifyValue = val),
+                activeColor: AppColors.primary,
+                activeTrackColor: AppColors.primary.withOpacity(0.4),
+                inactiveThumbColor: Colors.grey.shade400,
+                inactiveTrackColor: Colors.grey.shade300,
+              ),
+            ],
           ),
+          actions: [
+            TextButton(
+              onPressed: () async {
+                final int? parsed = int.tryParse(limitController.text.trim());
+                if (parsed != null) {
+                  setState(() {
+                    _monthlyLimits[category] = parsed;
+                    _limitNotifications[category] = notifyValue;
+                  });
+                  await CategoryStorage.setLimit(category, parsed);
+                  await CategoryStorage.setLimitNotify(category, notifyValue);
+                }
+                Navigator.of(context).pop();
+              },
+              child: Text('확인'),
+            ),
+          ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              final int? parsed = int.tryParse(limitController.text.trim());
-              if (parsed != null) {
-                setState(() {
-                  _monthlyLimits[category] = parsed;
-                });
-                CategoryStorage.setLimit(category, parsed);
-              }
-              Navigator.of(context).pop();
-            },
-            child: Text('확인'),
-          ),
-        ],
       ),
     );
   }
@@ -207,8 +238,10 @@ class _CategorySettingScreenState extends State<CategorySettingScreen> {
                     child: ListTile(
                       title: Text(category, style: NoteTextStyles.subHeader),
                       subtitle: isExpenseTab
-                          ? Text('월 한도: ${_monthlyLimits[category]}원',
-                          style: NoteTextStyles.subtitle)
+                          ? Text(
+                        '월 한도: ${_monthlyLimits[category]}원 / 알림: ${(_limitNotifications[category] ?? true) ? 'ON' : 'OFF'}',
+                        style: NoteTextStyles.subtitle,
+                      )
                           : null,
                       trailing: Row(
                         mainAxisSize: MainAxisSize.min,

@@ -55,7 +55,7 @@ class _SignupHomeState extends State<SignupHome> {
       }),
     );
     if (response.statusCode == 200) {
-      _showDialog('성공',onClose:(){
+      _showDialog('회원가입 성공',onClose:(){
         _nameController.clear();
         _emailController.clear();
         _passwordController.clear();
