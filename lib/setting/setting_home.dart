@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../style/main_style.dart';
+import 'password_confirm.dart';
 import 'profile_setting.dart';
 import 'category_setting.dart';
 import 'reminder_setting.dart';
@@ -49,19 +50,28 @@ class SettingHomeScreen extends StatelessWidget {
             context,
             icon: Icons.announcement,
             title: '공지사항',
-            onTap: () {},
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => NoticeScreen()),
+            ),
           ),
           _buildSettingTile(
             context,
             icon: Icons.help_outline,
             title: '도움말',
-            onTap: () {},
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => HelpScreen()),
+            ),
           ),
           _buildSettingTile(
             context,
             icon: Icons.mail_outline,
             title: '문의하기',
-            onTap: () {},
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => ContactScreen()),
+            ),
           ),
         ],
       ),

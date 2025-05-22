@@ -17,7 +17,7 @@ class _CategorySettingScreenState extends State<CategorySettingScreen> {
   final Map<String, bool> _limitNotifications = {};
   final TextEditingController _categoryController = TextEditingController();
 
-  bool isExpenseTab = false; // 수입이 왼쪽이 되도록 false로 시작
+  bool isExpenseTab = false;
   bool _isLoading = true;
 
   @override
@@ -61,51 +61,51 @@ class _CategorySettingScreenState extends State<CategorySettingScreen> {
     await CategoryStorage.saveIncomeCategories(_incomeCategories);
   }
 
-  void _addCategory() {
-    final newCategory = _categoryController.text.trim();
-    final currentList = isExpenseTab ? _expenseCategories : _incomeCategories;
-    if (newCategory.isNotEmpty && !currentList.contains(newCategory)) {
-      setState(() {
-        currentList.add(newCategory);
-        if (isExpenseTab) {
-          _monthlyLimits[newCategory] = 0;
-          _limitNotifications[newCategory] = true;
-        }
-        _categoryController.clear();
-      });
-      _saveCategories();
-    }
-  }
+  // void _addCategory() {
+  //   final newCategory = _categoryController.text.trim();
+  //   final currentList = isExpenseTab ? _expenseCategories : _incomeCategories;
+  //   if (newCategory.isNotEmpty && !currentList.contains(newCategory)) {
+  //     setState(() {
+  //       currentList.add(newCategory);
+  //       if (isExpenseTab) {
+  //         _monthlyLimits[newCategory] = 0;
+  //         _limitNotifications[newCategory] = true;
+  //       }
+  //       _categoryController.clear();
+  //     });
+  //     _saveCategories();
+  //   }
+  // }
 
-  void _deleteCategory(String cat) {
-    final currentList = isExpenseTab ? _expenseCategories : _incomeCategories;
-    final defaultList = isExpenseTab
-        ? CategoryStorage.defaultExpense
-        : CategoryStorage.defaultIncome;
+  // void _deleteCategory(String cat) {
+  //   final currentList = isExpenseTab ? _expenseCategories : _incomeCategories;
+  //   final defaultList = isExpenseTab
+  //       ? CategoryStorage.defaultExpense
+  //       : CategoryStorage.defaultIncome;
 
-    if (defaultList.contains(cat)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('기본 카테고리는 삭제할 수 없습니다.')),
-      );
-      return;
-    }
+  //   if (defaultList.contains(cat)) {
+  //     ScaffoldMessenger.of(context).showSnackBar(
+  //       SnackBar(content: Text('기본 카테고리는 삭제할 수 없습니다.')),
+  //     );
+  //     return;
+  //   }
 
-    if (currentList.length == 1) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('최소 1개의 카테고리는 유지해야 합니다.')),
-      );
-      return;
-    }
+  //   if (currentList.length == 1) {
+  //     ScaffoldMessenger.of(context).showSnackBar(
+  //       SnackBar(content: Text('최소 1개의 카테고리는 유지해야 합니다.')),
+  //     );
+  //     return;
+  //   }
 
-    setState(() {
-      currentList.remove(cat);
-      if (isExpenseTab) {
-        _monthlyLimits.remove(cat);
-        _limitNotifications.remove(cat);
-      }
-    });
-    _saveCategories();
-  }
+  //   setState(() {
+  //     currentList.remove(cat);
+  //     if (isExpenseTab) {
+  //       _monthlyLimits.remove(cat);
+  //       _limitNotifications.remove(cat);
+  //     }
+  //   });
+  //   _saveCategories();
+  // }
 
   void _showLimitDialog(String category) async {
     final TextEditingController limitController =
@@ -204,28 +204,31 @@ class _CategorySettingScreenState extends State<CategorySettingScreen> {
                 ],
               ),
             ),
-            SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _categoryController,
-                    decoration: InputDecoration(
-                      hintText: '카테고리 이름 입력',
-                      border: OutlineInputBorder(),
-                      fillColor: Colors.white,
-                      filled: true,
-                    ),
-                  ),
-                ),
-                SizedBox(width: 8),
-                ElevatedButton(
-                  onPressed: _addCategory,
-                  child: Text('추가'),
-                  style: NoteDecorations.filledButton,
-                ),
-              ],
-            ),
+
+            // ---- 카테고리 추가 UI (비활성화) ----
+            // SizedBox(height: 16),
+            // Row(
+            //   children: [
+            //     Expanded(
+            //       child: TextField(
+            //         controller: _categoryController,
+            //         decoration: InputDecoration(
+            //           hintText: '카테고리 이름 입력',
+            //           border: OutlineInputBorder(),
+            //           fillColor: Colors.white,
+            //           filled: true,
+            //         ),
+            //       ),
+            //     ),
+            //     SizedBox(width: 8),
+            //     ElevatedButton(
+            //       onPressed: _addCategory,
+            //       child: Text('추가'),
+            //       style: NoteDecorations.filledButton,
+            //     ),
+            //   ],
+            // ),
+
             SizedBox(height: 24),
             Expanded(
               child: currentList.isEmpty
@@ -243,23 +246,30 @@ class _CategorySettingScreenState extends State<CategorySettingScreen> {
                         style: NoteTextStyles.subtitle,
                       )
                           : null,
-                      trailing: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          if (isExpenseTab)
-                            IconButton(
-                              icon: Icon(Icons.settings),
-                              onPressed: () => _showLimitDialog(category),
-                            ),
-                          if (!(isExpenseTab
-                              ? CategoryStorage.defaultExpense.contains(category)
-                              : CategoryStorage.defaultIncome.contains(category)))
-                            IconButton(
-                              icon: Icon(Icons.delete, color: Colors.red),
-                              onPressed: () => _deleteCategory(category),
-                            ),
-                        ],
-                      ),
+                      trailing: isExpenseTab
+                          ? IconButton(
+                        icon: Icon(Icons.settings),
+                        onPressed: () => _showLimitDialog(category),
+                      )
+                          : null,
+                      // 삭제 버튼 (비활성화)
+                      // trailing: Row(
+                      //   mainAxisSize: MainAxisSize.min,
+                      //   children: [
+                      //     if (isExpenseTab)
+                      //       IconButton(
+                      //         icon: Icon(Icons.settings),
+                      //         onPressed: () => _showLimitDialog(category),
+                      //       ),
+                      //     if (!(isExpenseTab
+                      //         ? CategoryStorage.defaultExpense.contains(category)
+                      //         : CategoryStorage.defaultIncome.contains(category)))
+                      //       IconButton(
+                      //         icon: Icon(Icons.delete, color: Colors.red),
+                      //         onPressed: () => _deleteCategory(category),
+                      //       ),
+                      //   ],
+                      // ),
                     ),
                   );
                 },

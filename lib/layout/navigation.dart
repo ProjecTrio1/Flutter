@@ -103,7 +103,7 @@ class _NavigationState extends State<Navigation> {
             BottomNavigationBarItem(icon: Icon(Icons.edit_note), label: '가계부'),
             BottomNavigationBarItem(icon: Icon(Icons.show_chart), label: '자산'),
             BottomNavigationBarItem(icon: Icon(Icons.home), label: '홈'),
-            BottomNavigationBarItem(icon: Icon(Icons.group), label: '그룹'),
+            BottomNavigationBarItem(icon: Icon(Icons.group), label: '커뮤니티'),
             BottomNavigationBarItem(icon: Icon(Icons.settings), label: '마이페이지'),
           ],
         ),

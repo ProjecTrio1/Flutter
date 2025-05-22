@@ -74,7 +74,6 @@ class _AIAnalysisHomePageState extends State<AIAnalysisHomePage>{
       );
     }
 
-    
     final suggestions = report!['suggestion'].toString().split(' / ');
     final byCategory = report!['byCategory'];
 

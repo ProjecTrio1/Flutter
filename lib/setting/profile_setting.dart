@@ -16,22 +16,18 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   final TextEditingController _passwordCheckController = TextEditingController();
   Gender _selectedGender = Gender.male;
   int _selectAge = 2;
+  String? _email;
 
   final Map<int, String> ageGroups = {
-    1: '10대 미만',
-    2: '10-19세',
-    3: '20-29세',
-    4: '30-39세',
-    5: '40-49세',
-    6: '50-59세',
-    7: '60-69세',
-    8: '70-79세',
-    9: '80-89세',
-    10: '90-99세',
-    11: '100세 이상'
+    1: '10대 미만', 2: '10-19세', 3: '20-29세', 4: '30-39세',
+    5: '40-49세', 6: '50-59세', 7: '60-69세', 8: '70-79세',
+    9: '80-89세', 10: '90-99세', 11: '100세 이상'
   };
 
-  String? _email;
+  bool _isPasswordVisible = false;
+  bool _isPasswordCheckVisible = false;
+
+  final TextEditingController _emailController = TextEditingController();
 
   @override
   void initState() {
@@ -49,7 +45,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       final data = jsonDecode(utf8.decode(response.bodyBytes));
       setState(() {
         _nameController.text = data['username'] ?? '';
-        _email = data['email'];
+        _emailController.text = data['email'] ?? '';
         _selectedGender = data['gender'] == 'F' ? Gender.female : Gender.male;
         _selectAge = data['age'] ?? 2;
       });
@@ -57,9 +53,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   }
 
   void _submitUpdate() async {
-    final password = _passwordController.text;
-    final passwordCheck = _passwordCheckController.text;
-    if (password != passwordCheck) {
+    if (_passwordController.text != _passwordCheckController.text) {
       _showDialog('비밀번호가 일치하지 않습니다.');
       return;
     }
@@ -74,7 +68,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({
         'username': _nameController.text,
-        'password': password,
+        'password': _passwordController.text,
         'gender': genderStr,
         'age': _selectAge,
       }),
@@ -103,9 +97,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     );
   }
 
-  bool _isPasswordVisible = false;
-  bool _isPasswordCheckVisible = false;
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -119,9 +110,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               decoration: InputDecoration(labelText: '이름'),
             ),
             SizedBox(height: 12),
-            TextFormField(
-              initialValue: _email ?? '',
+            TextField(
+              controller: _emailController,
               readOnly: true,
+              style: TextStyle(color: Colors.grey),
               decoration: InputDecoration(labelText: '이메일'),
             ),
             SizedBox(height: 12),
@@ -130,7 +122,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               leading: Radio<Gender>(
                 value: Gender.male,
                 groupValue: _selectedGender,
-                onChanged: (Gender? value) => setState(() => _selectedGender = value!),
+                onChanged: (val) => setState(() => _selectedGender = val!),
               ),
             ),
             ListTile(
@@ -138,13 +130,15 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               leading: Radio<Gender>(
                 value: Gender.female,
                 groupValue: _selectedGender,
-                onChanged: (Gender? value) => setState(() => _selectedGender = value!),
+                onChanged: (val) => setState(() => _selectedGender = val!),
               ),
             ),
             DropdownButtonFormField<int>(
               value: _selectAge,
               decoration: InputDecoration(labelText: '연령대'),
-              items: ageGroups.entries.map((e) => DropdownMenuItem(value: e.key, child: Text(e.value))).toList(),
+              items: ageGroups.entries
+                  .map((e) => DropdownMenuItem(value: e.key, child: Text(e.value)))
+                  .toList(),
               onChanged: (value) => setState(() => _selectAge = value!),
             ),
             SizedBox(height: 12),
@@ -175,7 +169,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             ElevatedButton(
               onPressed: _submitUpdate,
               child: Text('정보 수정 완료'),
-            )
+            ),
           ],
         ),
       ),
