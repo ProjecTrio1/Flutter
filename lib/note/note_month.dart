@@ -9,6 +9,7 @@ import 'note_date.dart';
 import 'note_list_widget.dart';
 import '../style/note_style.dart';
 import '../style/main_style.dart';
+import 'note_add.dart';
 
 class NoteMonthScreen extends StatefulWidget {
   @override
@@ -88,7 +89,7 @@ class _NoteMonthScreenState extends State<NoteMonthScreen> {
       MaterialPageRoute(
         builder: (_) => NoteDateScreen(selectedDate: selected),
       ),
-    );
+    ).then((_) => _fetchMonthlyNotes()); // 돌아올 때 데이터 반영
   }
 
   void _toggleView() {
@@ -201,14 +202,22 @@ class _NoteMonthScreenState extends State<NoteMonthScreen> {
           ),
           const SizedBox(height: 2),
           if (income > 0)
-            Text('+${formatter.format(income)}', style: TextStyle(fontSize: 7, color: AppColors.incomeBlue)),
+            Text('+${formatter.format(income)}', style: TextStyle(fontSize: 9, color: AppColors.incomeBlue)),
           if (expense > 0)
-            Text('-${formatter.format(expense)}', style: TextStyle(fontSize: 7, color: AppColors.expenseRed)),
+            Text('-${formatter.format(expense)}', style: TextStyle(fontSize: 9, color: AppColors.expenseRed)),
           Text('${net >= 0 ? '+' : '-'}${formatter.format(net.abs())}',
-              style: TextStyle(fontSize: 7, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
+              style: TextStyle(fontSize: 9, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
         ],
       ),
     );
+  }
+
+  void _navigateToAddNote() async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => QuickAddScreen()),
+    );
+    _fetchMonthlyNotes();
   }
 
   @override
@@ -233,6 +242,10 @@ class _NoteMonthScreenState extends State<NoteMonthScreen> {
             onPressed: _toggleView,
           ),
         ],
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _navigateToAddNote,
+        child: Icon(Icons.add),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16),
@@ -261,6 +274,7 @@ class _NoteMonthScreenState extends State<NoteMonthScreen> {
                   ? LayoutBuilder(
                 builder: (context, constraints) {
                   return TableCalendar(
+                    key: ValueKey(_focusedDay),
                     firstDay: DateTime(2000),
                     lastDay: DateTime(2100),
                     focusedDay: _focusedDay,
@@ -271,7 +285,8 @@ class _NoteMonthScreenState extends State<NoteMonthScreen> {
                     availableCalendarFormats: const {
                       CalendarFormat.month: '',
                     },
-                    rowHeight: constraints.maxHeight / 6.5,
+                    headerVisible: false,
+                    rowHeight: constraints.maxHeight / 5.5,
                     calendarStyle: CalendarStyle(
                       todayDecoration: BoxDecoration(),
                       selectedDecoration: BoxDecoration(),
