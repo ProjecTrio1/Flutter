@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../config.dart';
 import '../style/main_style.dart';
 import 'password_confirm.dart';
 import 'profile_setting.dart';

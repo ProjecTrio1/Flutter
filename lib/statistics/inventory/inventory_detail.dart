@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../config.dart';
 import 'inventory_add_item.dart';
 import 'inventory_item_card.dart';
 import 'view_mode.dart';

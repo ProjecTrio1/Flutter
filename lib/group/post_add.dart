@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../config.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 
@@ -80,43 +81,47 @@ class _GroupPostAddScreenState extends State<GroupPostAddScreen> {
           )
         ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
+      resizeToAvoidBottomInset: true,
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(20),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             TextField(
               controller: _titleController,
               decoration: InputDecoration(
-                labelText: '제목',
+                hintText: '제목',
                 border: OutlineInputBorder(),
+                filled: true,
+                fillColor: Colors.white,
               ),
             ),
-            SizedBox(height: 16),
-            Expanded(
-              child: TextField(
-                controller: _contentController,
-                decoration: InputDecoration(
-                  labelText: '내용',
-                  border: OutlineInputBorder(),
-                ),
-                keyboardType: TextInputType.multiline,
-                maxLines: null,
-                expands: true,
-                textAlignVertical: TextAlignVertical.top,
+            const SizedBox(height: 20),
+            TextField(
+              controller: _contentController,
+              maxLines: 12,
+              decoration: InputDecoration(
+                hintText: '내용',
+                border: OutlineInputBorder(),
+                filled: true,
+                fillColor: Colors.white,
+              ),
+            ),
+            const SizedBox(height: 20),
+            GestureDetector(
+              onTap: _pickImage,
+              child: Row(
+                children: [
+                  Icon(Icons.image, color: Colors.orange),
+                  SizedBox(width: 5),
+                  Text(
+                    _selectedImage != null ? '미디어 변경' : '미디어 추가',
+                    style: TextStyle(color: Colors.orange),
+                  ),
+                ],
               ),
             ),
           ],
-        ),
-      ),
-      bottomNavigationBar: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: ElevatedButton.icon(
-          onPressed: _pickImage,
-          icon: Icon(Icons.image),
-          label: Text(_selectedImage != null ? '미디어 변경' : '미디어 추가'),
-          style: ElevatedButton.styleFrom(
-            minimumSize: Size(double.infinity, 48),
-          ),
         ),
       ),
     );

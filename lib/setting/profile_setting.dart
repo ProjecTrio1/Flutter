@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../config.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -38,7 +39,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   Future<void> _loadUserInfo() async {
     final prefs = await SharedPreferences.getInstance();
     final userID = prefs.getInt('userID');
-    final url = Uri.parse('http://10.0.2.2:8080/user/profile/$userID');
+    final url = Uri.parse('${AppConfig.baseUrl}/user/profile/$userID');
 
     final response = await http.get(url);
     if (response.statusCode == 200) {
@@ -62,7 +63,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     final userID = prefs.getInt('userID');
     final genderStr = _selectedGender == Gender.male ? 'M' : 'F';
 
-    final url = Uri.parse('http://10.0.2.2:8080/user/update/$userID');
+    final url = Uri.parse('${AppConfig.baseUrl}/user/update/$userID');
     final response = await http.put(
       url,
       headers: {'Content-Type': 'application/json'},

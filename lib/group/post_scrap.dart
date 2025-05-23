@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../config.dart';
 import 'post_detail.dart';
 
 final List<Map<String, dynamic>> scrapedPosts = [];

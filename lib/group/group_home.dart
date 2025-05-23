@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../config.dart';
 import 'post_best.dart';
 import 'post_add.dart';
 import 'post_detail.dart';

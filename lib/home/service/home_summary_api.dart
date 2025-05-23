@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter/material.dart';
+import '../../config.dart';
 
 class HomeSummaryService {
   static Future<Map<String, int>?> fetchSummary(String year, String month) async {
@@ -9,7 +11,7 @@ class HomeSummaryService {
       final userId = prefs.getInt('userID');
       if (userId == null) return null;
 
-      final uri = Uri.parse('http://10.0.2.2:8080/note/summary?userId=$userId&year=$year&month=$month');
+      final uri = Uri.parse('${AppConfig.baseUrl}/note/summary?userId=$userId&year=$year&month=$month');
       final response = await http.get(uri);
 
       if (response.statusCode == 200) {

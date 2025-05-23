@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../config.dart';
 
 class InventoryItemCard extends StatelessWidget {
   final String title;

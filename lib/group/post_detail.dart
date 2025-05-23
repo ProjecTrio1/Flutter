@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../config.dart';
 import 'post_add.dart';
 import 'post_scrap.dart';
 
@@ -151,6 +152,7 @@ class _GroupPostDetailScreenState extends State<GroupPostDetailScreen> {
   Widget _buildPostContent(String postAuthorEmail, String postDate) {
     return Padding(
       padding: const EdgeInsets.all(16.0),
+      child:SingleChildScrollView(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -204,18 +206,22 @@ class _GroupPostDetailScreenState extends State<GroupPostDetailScreen> {
             decoration: InputDecoration(
               hintText: replyingToIndex == null ? '댓글을 입력하세요' : '대댓글을 입력하세요',
               border: OutlineInputBorder(),
+              filled: true,
+              fillColor: Colors.white,
             ),
+            maxLines: null,
           ),
-          SizedBox(height: 8),
+          const SizedBox(height: 8),
           Align(
             alignment: Alignment.centerRight,
             child: ElevatedButton(
               onPressed: _submitComment,
-              child: Text('등록'),
+              child: const Text('등록'),
             ),
           ),
         ],
       ),
+    ),
     );
   }
 

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../config.dart';
 
 class StatisticColors {
   static const income = Color(0xFF4A90E2);

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../config.dart';
 import '../home/main_home.dart';
 import '../statistics/statistics_home.dart';
 import '../note/note_home.dart';
@@ -17,14 +18,14 @@ class _NavigationState extends State<Navigation> {
   int _selectedIndex = 2; // 기본 홈 화면
 
   final List<Widget> _pages = [
-    NoteHomeScreen(),           // 0: 가계부
-    StatisticsHome(),           // 1: 자산
-    MenuHomeScreen(),           // 2: 홈
-    GroupHomeScreen(           // 3: 그룹
-      username: 'test1',       // 더미 사용자 이름
-      userID: 9,               // 더미 사용자 ID
+    NoteHomeScreen(), // 0: 가계부
+    StatisticsHome(), // 1: 자산
+    MenuHomeScreen(), // 2: 홈
+    GroupHomeScreen( // 3: 그룹
+      username: 'test1', // 더미 사용자 이름
+      userID: 9, // 더미 사용자 ID
     ),
-    SettingHomeScreen(),        // 4: 마이페이지
+    SettingHomeScreen(), // 4: 마이페이지
   ];
 
   void _onItemTapped(int index) {
@@ -38,30 +39,35 @@ class _NavigationState extends State<Navigation> {
     return Scaffold(
       backgroundColor: Colors.white,
 
-      // 공통 AppBar
       appBar: PreferredSize(
-        preferredSize: Size.fromHeight(56),
+        preferredSize: Size.fromHeight(90),
         child: Container(
           color: Colors.white,
           padding: EdgeInsets.symmetric(horizontal: 16),
+          height: 90,
           child: SafeArea(
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('LOGO', style: AppTextStyles.title),
-                Icon(Icons.notifications, color: AppColors.textPrimary),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('그알',
+                        style: AppTextStyles.title.copyWith(fontSize: 20)),
+                    Icon(Icons.notifications, color: AppColors.textPrimary),
+                  ],
+                ),
+                const SizedBox(height: 16),
               ],
             ),
           ),
         ),
       ),
 
-
-      // 현재 선택된 페이지
       body: _pages[_selectedIndex],
 
-      // 플로팅 버튼 표시
-      floatingActionButton: (_selectedIndex == 0 || _selectedIndex == 2 || _selectedIndex == 3)
+      floatingActionButton: (_selectedIndex == 0 || _selectedIndex == 2 ||
+          _selectedIndex == 3)
           ? FloatingActionButton(
         onPressed: () {
           if (_selectedIndex == 0 || _selectedIndex == 2) {
@@ -86,27 +92,23 @@ class _NavigationState extends State<Navigation> {
       )
           : null,
 
-
-      // 하단 네비게이션 바
-      bottomNavigationBar: SizedBox(
-        child: BottomNavigationBar(
-          currentIndex: _selectedIndex,
-          onTap: _onItemTapped,
-          selectedItemColor: AppColors.primary,
-          unselectedItemColor: Colors.grey,
-          selectedLabelStyle: AppTextStyles.navLabel,
-          unselectedLabelStyle: AppTextStyles.navLabel.copyWith(
-            fontWeight: FontWeight.normal,
-          ),
-          type: BottomNavigationBarType.fixed,
-          items: const [
-            BottomNavigationBarItem(icon: Icon(Icons.edit_note), label: '가계부'),
-            BottomNavigationBarItem(icon: Icon(Icons.show_chart), label: '자산'),
-            BottomNavigationBarItem(icon: Icon(Icons.home), label: '홈'),
-            BottomNavigationBarItem(icon: Icon(Icons.group), label: '커뮤니티'),
-            BottomNavigationBarItem(icon: Icon(Icons.settings), label: '마이페이지'),
-          ],
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _selectedIndex,
+        onTap: _onItemTapped,
+        selectedItemColor: AppColors.primary,
+        unselectedItemColor: Colors.grey,
+        selectedLabelStyle: AppTextStyles.navLabel,
+        unselectedLabelStyle: AppTextStyles.navLabel.copyWith(
+          fontWeight: FontWeight.normal,
         ),
+        type: BottomNavigationBarType.fixed,
+        items: const [
+          BottomNavigationBarItem(icon: Icon(Icons.edit_note), label: '가계부'),
+          BottomNavigationBarItem(icon: Icon(Icons.show_chart), label: '자산'),
+          BottomNavigationBarItem(icon: Icon(Icons.home), label: '홈'),
+          BottomNavigationBarItem(icon: Icon(Icons.group), label: '커뮤니티'),
+          BottomNavigationBarItem(icon: Icon(Icons.settings), label: '마이페이지'),
+        ],
       ),
     );
   }

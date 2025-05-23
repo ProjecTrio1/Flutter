@@ -1,6 +1,7 @@
 //달력에서 날짜 선택 시 이동하는 페이지
 
 import 'package:flutter/material.dart';
+import '../config.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
@@ -33,7 +34,7 @@ class _NoteDateScreenState extends State<NoteDateScreen> {
     final prefs = await SharedPreferences.getInstance();
     final userID = prefs.getInt('userID');
 
-    final url = Uri.parse('http://10.0.2.2:8080/note/list?userID=$userID');
+    final url = Uri.parse('${AppConfig.baseUrl}/note/list?userID=$userID');
     final response = await http.get(url);
 
     if (response.statusCode == 200) {

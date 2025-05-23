@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../config.dart';
 import 'package:intl/intl.dart';
 import 'package:http/http.dart' as http;
 import 'package:uuid/uuid.dart';
@@ -120,8 +121,8 @@ class _QuickAddScreenState extends State<QuickAddScreen> {
     final prefs = await SharedPreferences.getInstance();
     final userID = prefs.getInt('userID');
     final url = widget.existingNote != null
-        ? Uri.parse('http://10.0.2.2:8080/note/update/${widget.existingNote!['id']}')
-        : Uri.parse('http://10.0.2.2:8080/note/add');
+        ? Uri.parse('${AppConfig.baseUrl}/note/update/${widget.existingNote!['id']}')
+        : Uri.parse('${AppConfig.baseUrl}/note/add');
     final response = await http.post(
       url,
       headers: {'Content-Type': 'application/json'},

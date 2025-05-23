@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../config.dart';
 import '../style/main_style.dart';
 import '../style/note_style.dart';
 

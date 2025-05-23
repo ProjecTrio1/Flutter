@@ -1,5 +1,6 @@
 
 import 'package:flutter/material.dart';
+import '../config.dart';
 import 'post_detail.dart';
 import 'group_home.dart'; // dummyPosts 불러오기 위해
 

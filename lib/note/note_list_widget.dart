@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../config.dart';
 import 'package:intl/intl.dart';
 import '../style/note_style.dart';
 import 'note_add.dart';
@@ -23,7 +24,7 @@ class _NoteListWidgetState extends State<NoteListWidget> {
   Future<void> sendFeedback(int noteId, bool? agree) async {
     try {
       final response = await http.post(
-        Uri.parse('http://10.0.2.2:8080/note/report/feedback'),
+        Uri.parse('${AppConfig.baseUrl}/note/report/feedback'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'noteId': noteId, 'agree': agree}),
       );

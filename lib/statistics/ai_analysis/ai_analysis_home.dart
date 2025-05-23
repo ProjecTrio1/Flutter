@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
+import '../../config.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
 Future<Map<String, dynamic>> fetchMonthlyReport(String userId) async {
-  final response = await http.get(Uri.parse('http://10.0.2.2:8080/note/report/monthly/$userId'));
+  final response = await http.get(Uri.parse('${AppConfig.baseUrl}/note/report/monthly/$userId'));
   print("요청 URL: http://<서버주소>/note/report/monthly/$userId");
 
   if(response.statusCode==200){

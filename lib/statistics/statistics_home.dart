@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../config.dart';
 import 'basic_statistics.dart';
 import 'inventory/inventory_home.dart';
 import 'ai_analysis/ai_analysis_home.dart';

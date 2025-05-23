@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../config.dart';
 import '../style/main_style.dart';
 import '../style/note_style.dart';
 
@@ -33,7 +34,8 @@ class _ContactScreenState extends State<ContactScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: Text('문의하기')),
-      body: Padding(
+      resizeToAvoidBottomInset: true,
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -70,12 +72,14 @@ class _ContactScreenState extends State<ContactScreen> {
                 Text('미디어 추가', style: TextStyle(color: AppColors.primary)),
               ],
             ),
-            Spacer(),
+            SizedBox(height: 20),
             Divider(),
             Padding(
               padding: const EdgeInsets.only(top: 8),
-              child: Text('문의 메일: projectrio@xxxxx.com',
-                  style: NoteTextStyles.subtitle.copyWith(color: Colors.grey.shade700)),
+              child: Text(
+                '문의 메일: projectrio@xxxxx.com',
+                style: NoteTextStyles.subtitle.copyWith(color: Colors.grey.shade700),
+              ),
             ),
             SizedBox(height: 20),
             SizedBox(

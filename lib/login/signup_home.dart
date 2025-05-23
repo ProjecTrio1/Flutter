@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../config.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
@@ -41,7 +42,7 @@ class _SignupHomeState extends State<SignupHome> {
       _showDialog('비밀번호가 일치하지 않습니다.');
       return;
     }
-    final url = Uri.parse('http://10.0.2.2:8080/user/signup'); // Android 에뮬레이터 기준 IP
+    final url = Uri.parse('${AppConfig.baseUrl}/user/signup'); // Android 에뮬레이터 기준 IP
     final response = await http.post(
       url,
       headers: {'Content-Type': 'application/json'},
@@ -97,7 +98,8 @@ class _SignupHomeState extends State<SignupHome> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('회원가입')),
-      body: Padding(
+      resizeToAvoidBottomInset: true,
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(20.0),
         child: Column(
           children: [

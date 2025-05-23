@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../config.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import 'dart:convert';
@@ -48,7 +49,7 @@ class _MenuHomeScreenState extends State<MenuHomeScreen> {
     final userID = prefs.getInt('userID');
     if (userID == null) return;
 
-    final url = Uri.parse('http://10.0.2.2:8080/note/list?userID=$userID');
+    final url = Uri.parse('${AppConfig.baseUrl}/note/list?userID=$userID');
     final response = await http.get(url);
 
     if (response.statusCode == 200) {

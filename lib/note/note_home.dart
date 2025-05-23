@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../config.dart';
 import 'note_month.dart';
 
 class NoteHomeScreen extends StatelessWidget {

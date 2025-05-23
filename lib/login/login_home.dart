@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../config.dart';
 import '../home/main_home.dart';
 import 'package:http/http.dart' as http;
 import 'signup_home.dart';// main_home.dart 경로 임포트
@@ -23,7 +24,7 @@ class _LoginHomeState extends State<LoginHome> {
     final email = _emailController.text;
     final password = _passwordController.text;
     /* 서버 테스트*/
-    final url = Uri.parse('http://10.0.2.2:8080/user/login'); // Android 에뮬레이터 기준 IP
+    final url = Uri.parse('${AppConfig.baseUrl}/user/login'); // Android 에뮬레이터 기준 IP
     final response = await http.post(
       url,
       headers: {'Content-Type': 'application/json'},

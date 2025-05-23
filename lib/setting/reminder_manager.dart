@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
+import 'package:flutter/material.dart';
+import '../config.dart';
 
 class ReminderManager {
   static Future<void> saveReminderItem({
@@ -29,7 +31,7 @@ class ReminderManager {
   static Future<void> markOverspendAsFalse(String id) async {
     try {
       final response = await http.patch(
-        Uri.parse('http://10.0.2.2:8080/note/overspend-off/$id'),
+        Uri.parse('${AppConfig.baseUrl}/note/overspend-off/$id'),
       );
       if (response.statusCode == 200) {
         print("notifyOverspend 해제 완료");
@@ -44,7 +46,7 @@ class ReminderManager {
   static Future<String?> fetchFeedbackStatus(String id) async {
     try {
       final response = await http.get(
-        Uri.parse('http://10.0.2.2:8080/note/feedback/$id'),
+        Uri.parse('${AppConfig.baseUrl}/note/feedback/$id'),
       );
       if (response.statusCode == 200) {
         final data = jsonDecode(utf8.decode(response.bodyBytes));
