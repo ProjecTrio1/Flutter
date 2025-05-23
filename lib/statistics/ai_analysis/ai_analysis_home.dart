@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:flutter/material.dart'; //이모지
 import 'dart:convert';
 
 import 'package:shared_preferences/shared_preferences.dart';
@@ -49,22 +48,7 @@ class _AIAnalysisHomePageState extends State<AIAnalysisHomePage>{
       print("리포트 불러오기 오류: $e");
     }
   }
-  Future<void> sendFeedback(int noteId, bool agree) async{
-    try{
-      final response = await http.post(Uri.parse('http://10.0.2.2:8080/note/report/feedback'),headers: {'Content-Type':'application/json'},body: jsonEncode({'noteId':noteId,'agree':agree}),);
 
-      if(response.statusCode == 200){
-        print('피드백 전송 성공');
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("피드백이 전송되었습니다.")),
-        );
-      }else{
-        print("피드백 실패 : ${response.statusCode}");
-      }
-    }catch(e){
-      print("예외 발생 : $e");
-    }
-  }
   @override
   Widget build(BuildContext context) {
     if(report == null){
@@ -109,30 +93,6 @@ class _AIAnalysisHomePageState extends State<AIAnalysisHomePage>{
                             subtitle: Text("${item['date'] ?? "-"} /" "${item['isAnomaly'] == true ? '이상소비' : item['isOverspending'] == true ? '과소비' : ''}"),
                             trailing: Row(
                               mainAxisSize: MainAxisSize.min,
-                              children: [
-                                IconButton(
-                                  onPressed: item['userFeedback'] == null
-                                    ? () async {
-                                    await sendFeedback(item['id'], true);
-                                    setState(() {
-                                      item['userFeedback'] =true;
-                                    });
-                                    }
-                                    :null,
-                                  icon: Icon(Icons.thumb_up),
-                                ),
-                                IconButton(
-                                  onPressed: item['userFeedback'] == null
-                                      ? () async {
-                                    await sendFeedback(item['id'], false);
-                                    setState(() {
-                                      item['userFeedback'] =false;
-                                    });
-                                  }
-                                      :null,
-                                  icon: Icon(Icons.thumb_down),
-                                ),
-                              ],
                             ),
                           ),
                         )),
