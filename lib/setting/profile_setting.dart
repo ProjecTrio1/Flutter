@@ -3,6 +3,7 @@ import '../config.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import '../style/main_style.dart';
 
 class EditProfileScreen extends StatefulWidget {
   @override
@@ -39,9 +40,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   Future<void> _loadUserInfo() async {
     final prefs = await SharedPreferences.getInstance();
     final userID = prefs.getInt('userID');
-    final url = Uri.parse('${AppConfig.baseUrl}/user/profile/$userID');
+    if (userID == null) return;
 
+    final url = Uri.parse('${AppConfig.baseUrl}/note/user/profile/$userID');
     final response = await http.get(url);
+
     if (response.statusCode == 200) {
       final data = jsonDecode(utf8.decode(response.bodyBytes));
       setState(() {
@@ -50,6 +53,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         _selectedGender = data['gender'] == 'F' ? Gender.female : Gender.male;
         _selectAge = data['age'] ?? 2;
       });
+    } else {
+      _showDialog('사용자 정보 불러오기 실패: ${response.body}');
     }
   }
 
@@ -114,8 +119,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             TextField(
               controller: _emailController,
               readOnly: true,
-              style: TextStyle(color: Colors.grey),
-              decoration: InputDecoration(labelText: '이메일'),
+              style: TextStyle(color: Color(0xFF656565)),
+              decoration: InputDecoration(
+                fillColor: Color(0xFFAEAEAE),
+                labelText: '이메일',
+              ),
             ),
             SizedBox(height: 12),
             ListTile(

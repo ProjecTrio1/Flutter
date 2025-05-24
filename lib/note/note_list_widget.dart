@@ -9,11 +9,13 @@ import 'dart:convert';
 class NoteListWidget extends StatefulWidget {
   final Map<DateTime, List<Map<String, dynamic>>> groupedNotes;
   final void Function(int id) onDelete;
+  final VoidCallback onDataChanged;
 
   const NoteListWidget({
     Key? key,
     required this.groupedNotes,
     required this.onDelete,
+    required this.onDataChanged,
   }) : super(key: key);
 
   @override
@@ -104,10 +106,13 @@ class _NoteListWidgetState extends State<NoteListWidget> {
                                 onPressed: () {
                                   Navigator.push(
                                     context,
-                                    MaterialPageRoute(
-                                      builder: (_) => QuickAddScreen(existingNote: note),
-                                    ),
-                                  );
+                                    MaterialPageRoute(builder: (_) => QuickAddScreen(existingNote: note)),
+                                  ).then((result) {
+                                    if (result == true) {
+                                      widget.onDataChanged();
+                                    }
+                                  });
+
                                 },
                               ),
                               IconButton(
@@ -148,30 +153,32 @@ class _NoteListWidgetState extends State<NoteListWidget> {
                                 style: isIncome ? NoteTextStyles.income : NoteTextStyles.expense,
                               ),
                               const SizedBox(width: 4),
-                              IconButton(
-                                iconSize: 24,
-                                icon: Icon(Icons.thumb_up,
-                                    color: feedback == true ? NoteColors.income : Colors.grey),
-                                onPressed: () async {
-                                  final newFeedback = feedback == true ? null : true;
-                                  await sendFeedback(id, newFeedback);
-                                  setState(() {
-                                    widget.groupedNotes[date]![index]['userFeedback'] = newFeedback;
-                                  });
-                                },
-                              ),
-                              IconButton(
-                                iconSize: 24,
-                                icon: Icon(Icons.thumb_down,
-                                    color: feedback == false ? NoteColors.expense : Colors.grey),
-                                onPressed: () async {
-                                  final newFeedback = feedback == false ? null : false;
-                                  await sendFeedback(id, newFeedback);
-                                  setState(() {
-                                    widget.groupedNotes[date]![index]['userFeedback'] = newFeedback;
-                                  });
-                                },
-                              ),
+                              if (!isIncome) ...[
+                                IconButton(
+                                  iconSize: 24,
+                                  icon: Icon(Icons.thumb_up,
+                                      color: feedback == true ? NoteColors.income : Colors.grey),
+                                  onPressed: () async {
+                                    final newFeedback = feedback == true ? null : true;
+                                    await sendFeedback(id, newFeedback);
+                                    setState(() {
+                                      widget.groupedNotes[date]![index]['userFeedback'] = newFeedback;
+                                    });
+                                  },
+                                ),
+                                IconButton(
+                                  iconSize: 24,
+                                  icon: Icon(Icons.thumb_down,
+                                      color: feedback == false ? NoteColors.income : Colors.grey),
+                                  onPressed: () async {
+                                    final newFeedback = feedback == false ? null : false;
+                                    await sendFeedback(id, newFeedback);
+                                    setState(() {
+                                      widget.groupedNotes[date]![index]['userFeedback'] = newFeedback;
+                                    });
+                                  },
+                                ),
+                              ],
                             ],
                           ),
                         ],

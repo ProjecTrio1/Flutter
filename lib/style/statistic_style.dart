@@ -1,19 +1,29 @@
 import 'package:flutter/material.dart';
-import '../config.dart';
 
 class StatisticColors {
-  static const income = Color(0xFF4A90E2);
-  static const expense = Color(0xFFFF5A5F);
-  static const surface = Color(0xFFF9F9F9);
+  static const colorPalette = [
+  Color(0xFFCD5F5F),
+  Color(0xFF36668A),
+  Color(0xFF297327),
+  Color(0xFF7A3C87),
+  Color(0xFF7A552D),
+  Color(0xFFFFD92F),
+  Color(0xFFA65628),
+  Color(0xFFF781BF),
+  Color(0xFF999999),
+  Color(0xFF66C2A5),
+  Color(0xFFFC8D62),
+  Color(0xFF8DA0CB)
+  ];
 
-  static const title = TextStyle(fontSize: 16, fontWeight: FontWeight.bold);
-  static const subtitle = TextStyle(fontSize: 14, fontWeight: FontWeight.w500);
-  static const percent = TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.black54);
-  static const highlightRed = TextStyle(color: Colors.red, fontWeight: FontWeight.bold);
-  static const highlightBlue = TextStyle(color: Colors.blue, fontWeight: FontWeight.bold);
+  static const pieTitle = TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white);
+  static const categoryLabel = TextStyle(fontSize: 18, fontWeight: FontWeight.bold);
+  static const amount = TextStyle(fontSize: 17);
 }
 
 class StatisticStyles {
+  static const dotSize = 14.0;
+
   static BoxDecoration get container => BoxDecoration(
     color: Colors.white,
     borderRadius: BorderRadius.circular(12),

@@ -10,10 +10,13 @@ import '../style/main_style.dart';
 import '../setting/category_setting.dart';
 import '../setting/category_helper.dart';
 import '../setting/reminder_manager.dart';
+import '../layout/notification_helper.dart';
 
 class QuickAddScreen extends StatefulWidget {
   final Map<String, dynamic>? existingNote;
-  const QuickAddScreen({this.existingNote});
+  final VoidCallback? onSaved;
+
+  const QuickAddScreen({this.existingNote, this.onSaved});
   @override
   State<QuickAddScreen> createState() => _QuickAddScreenState();
 }
@@ -110,6 +113,24 @@ class _QuickAddScreenState extends State<QuickAddScreen> {
     }
   }
 
+  Future<int> _getMonthlyTotalForCategory(String category) async {
+    final prefs = await SharedPreferences.getInstance();
+    final userId = prefs.getInt('userID');
+    final year = _selectedDateTime.year;
+    final month = _selectedDateTime.month.toString().padLeft(2, '0');
+
+    try {
+      final response = await http.get(Uri.parse(
+          '${AppConfig.baseUrl}/note/total?userId=$userId&category=$category&year=$year&month=$month'));
+      if (response.statusCode == 200) {
+        print("category total 응답: ${response.body}");
+        final decoded = jsonDecode(utf8.decode(response.bodyBytes));
+        return decoded['total'] ?? 0;
+      }
+    } catch (_) {}
+    return 0;
+  }
+
   Future<void> submitNoteAdd() async {
     if (_selectedCategory == null || _amountController.text.isEmpty || _createdAtController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -161,41 +182,74 @@ class _QuickAddScreenState extends State<QuickAddScreen> {
 
       final now = DateTime.now().toIso8601String();
 
-      // 1. notifyOverspend이 true일 경우, 로컬에도 저장
       if (notifyOverspend && !isIncome) {
-        final uuid = Uuid().v4();
+        final decoded = jsonDecode(bodyString);
+        final noteId = decoded['save']['id'].toString();
+
         await ReminderManager.saveReminderItem(
-          id: uuid,
+          id: noteId,
           content: _contentController.text,
           category: _selectedCategory ?? '',
           amount: _amountController.text,
           createdAt: now,
         );
       }
-      try{
-        if(bodyString.trim().startsWith('{')){
+      try {
+        if (bodyString.trim().startsWith('{')) {
           final decoded = jsonDecode(bodyString);
+
           if (decoded is Map &&
               decoded.containsKey('recommendation') &&
               (decoded['recommendation'] as String).trim().isNotEmpty) {
-            showDialog(
+            await showDialog(
               context: context,
               builder: (_) => AlertDialog(
                 title: Text('과소비 알림'),
                 content: Text(decoded['recommendation']),
-                actions: [TextButton(onPressed: () {Navigator.pop(context); Navigator.pop(context,true);}, child: Text('확인'))],
+                actions: [TextButton(onPressed: () => Navigator.pop(context), child: Text('확인'))],
               ),
             );
-            return;
+          }
+        }
+
+        if (!isIncome) {
+          final categoryLimit = await CategoryStorage.getLimit(_selectedCategory!);
+          final notifyLimit = await CategoryStorage.getLimitNotify(_selectedCategory!);
+          if (notifyLimit && categoryLimit > 0) {
+            final totalSpent = await _getMonthlyTotalForCategory(_selectedCategory!);
+
+            final addedAmount = int.parse(_amountController.text);
+            print("총합: $totalSpent / 한도: $categoryLimit / 추가금액: $addedAmount");
+            if (totalSpent + addedAmount > categoryLimit) {
+              final message = '${_selectedCategory!} 항목이 이번 달 한도 ${categoryLimit}원을 초과했습니다.';
+              await NotificationHelper.saveNotification(title: '지출 한도 초과', body: message);
+
+              if (context.mounted) {
+                await showDialog(
+                  context: context,
+                  builder: (_) => AlertDialog(
+                    title: Text('지출 한도 알림'),
+                    content: Text(message),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: Text('확인'),
+                      ),
+                    ],
+                  ),
+                );
+              }
+            }
           }
         }
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('저장 완료!')));
-        Navigator.pop(context,true);
+        if (widget.onSaved != null) widget.onSaved!();
+        Navigator.pop(context, _selectedDateTime);
 
       } catch (e) {
         print("JSON 파싱 오류: $e");
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('서버 응답 오류')));
-        Navigator.pop(context,true);
+        Navigator.pop(context, true);
       }
       _resetForm();
     } else {

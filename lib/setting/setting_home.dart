@@ -16,7 +16,6 @@ class SettingHomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.surface,
-      appBar: AppBar(title: Text('마이페이지')),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [

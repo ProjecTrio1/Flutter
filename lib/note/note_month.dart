@@ -203,22 +203,28 @@ class _NoteMonthScreenState extends State<NoteMonthScreen> {
           ),
           const SizedBox(height: 2),
           if (income > 0)
-            Text('+${formatter.format(income)}', style: TextStyle(fontSize: 9, color: AppColors.incomeBlue)),
+            Text('+${formatter.format(income)}', style: TextStyle(fontSize: 7, color: AppColors.incomeBlue)),
           if (expense > 0)
-            Text('-${formatter.format(expense)}', style: TextStyle(fontSize: 9, color: AppColors.expenseRed)),
+            Text('-${formatter.format(expense)}', style: TextStyle(fontSize: 7, color: AppColors.expenseRed)),
           Text('${net >= 0 ? '+' : '-'}${formatter.format(net.abs())}',
-              style: TextStyle(fontSize: 9, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
+              style: TextStyle(fontSize: 7, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
         ],
       ),
     );
   }
 
   void _navigateToAddNote() async {
-    await Navigator.push(
+    final result = await Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => QuickAddScreen()),
+      MaterialPageRoute(builder: (_) => QuickAddScreen(
+        onSaved: _fetchMonthlyNotes,
+      )),
     );
-    _fetchMonthlyNotes();
+
+    if (result == true) {
+      await _fetchMonthlyNotes();
+      setState(() {});
+    }
   }
 
   @override
@@ -245,7 +251,26 @@ class _NoteMonthScreenState extends State<NoteMonthScreen> {
         ],
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: _navigateToAddNote,
+        heroTag: 'note_month_fab',
+        onPressed: () async {
+          final result = await Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => QuickAddScreen(
+                onSaved: () {},
+              ),
+            ),
+          );
+
+          if (result is DateTime) {
+            setState(() {
+              _focusedDay = result;
+              _selectedYear = result.year;
+              _selectedMonth = result.month;
+            });
+            await _fetchMonthlyNotes();
+          }
+        },
         child: Icon(Icons.add),
       ),
       body: Padding(
@@ -275,7 +300,7 @@ class _NoteMonthScreenState extends State<NoteMonthScreen> {
                   ? LayoutBuilder(
                 builder: (context, constraints) {
                   return TableCalendar(
-                    key: ValueKey(_focusedDay),
+                    key: ValueKey(_groupedNotes.length),
                     firstDay: DateTime(2000),
                     lastDay: DateTime(2100),
                     focusedDay: _focusedDay,
@@ -287,7 +312,7 @@ class _NoteMonthScreenState extends State<NoteMonthScreen> {
                       CalendarFormat.month: '',
                     },
                     headerVisible: false,
-                    rowHeight: constraints.maxHeight / 5.5,
+                    rowHeight: constraints.maxHeight / 6.5,
                     calendarStyle: CalendarStyle(
                       todayDecoration: BoxDecoration(),
                       selectedDecoration: BoxDecoration(),
@@ -307,8 +332,10 @@ class _NoteMonthScreenState extends State<NoteMonthScreen> {
                 },
               )
                   : NoteListWidget(
+                key: ValueKey(_groupedNotes.length),
                 groupedNotes: _groupedNotes,
                 onDelete: _deleteNoteById,
+                onDataChanged: _fetchMonthlyNotes,
               ),
             ),
           ],

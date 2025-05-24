@@ -74,7 +74,7 @@ class _ReminderSettingScreenState extends State<ReminderSettingScreen> {
       final response = await http.post(
         Uri.parse('${AppConfig.baseUrl}/note/report/feedback'),
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'noteId': id, 'agree': agree}),
+        body: jsonEncode({'noteId': int.tryParse(id), 'agree': agree}),
       );
 
       if (response.statusCode == 200) {

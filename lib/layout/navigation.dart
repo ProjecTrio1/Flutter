@@ -8,6 +8,9 @@ import '../setting/setting_home.dart';
 import '../note/note_add.dart'; // QuickAddScreen
 import '../group/post_add.dart';
 import '../style/main_style.dart';
+import 'notification_panel.dart';
+import 'overspend_feedback_dialog.dart';
+import '../setting/reminder_manager.dart';
 
 class Navigation extends StatefulWidget {
   @override
@@ -35,29 +38,67 @@ class _NavigationState extends State<Navigation> {
   }
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkReminderFeedbackPopup();
+    });
+  }
+
+  void _checkReminderFeedbackPopup() async {
+    final reminders = await ReminderManager.loadReminderItems();
+    final now = DateTime.now();
+
+    for (final r in reminders) {
+      final createdAt = DateTime.tryParse(r['createdAt'] ?? '');
+      final feedback = r['feedback'] ?? '';
+
+      // 테스트 위해 조건 강제 수정
+      // 기존 조건: if (createdAt != null && now.difference(createdAt).inDays >= 30 && feedback.isEmpty)
+      if (createdAt != null && feedback.isEmpty) {
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (_) => OverspendFeedbackDialog(reminder: r),
+        );
+        break;
+      }
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
 
       appBar: PreferredSize(
-        preferredSize: Size.fromHeight(90),
+        preferredSize: Size.fromHeight(60),
         child: Container(
-          color: Colors.white,
-          padding: EdgeInsets.symmetric(horizontal: 16),
-          height: 90,
+          padding: const EdgeInsets.only(top: 0, left: 25, right: 10, bottom: 0),
+          color: AppColors.background,
           child: SafeArea(
+            bottom: false,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('그알',
-                        style: AppTextStyles.title.copyWith(fontSize: 20)),
-                    Icon(Icons.notifications, color: AppColors.textPrimary),
+                    Text('그알', style: AppTextStyles.title.copyWith(fontSize: 23)),
+                    IconButton(
+                      icon: Icon(Icons.notifications, color: AppColors.textPrimary),
+                      onPressed: () {
+                        showModalBottomSheet(
+                          context: context,
+                          isScrollControlled: true,
+                          backgroundColor: Colors.transparent,
+                          builder: (_) => const NotificationPanel(),
+                        );
+                      },
+                    ),
                   ],
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 12),
               ],
             ),
           ),
@@ -66,9 +107,13 @@ class _NavigationState extends State<Navigation> {
 
       body: _pages[_selectedIndex],
 
-      floatingActionButton: (_selectedIndex == 0 || _selectedIndex == 2 ||
-          _selectedIndex == 3)
+      floatingActionButton: (_selectedIndex == 0 || _selectedIndex == 2 || _selectedIndex == 3)
           ? FloatingActionButton(
+        heroTag: _selectedIndex == 0
+            ? 'fab_note'
+            : _selectedIndex == 2
+            ? 'fab_home'
+            : 'fab_group',
         onPressed: () {
           if (_selectedIndex == 0 || _selectedIndex == 2) {
             Navigator.push(
@@ -95,6 +140,8 @@ class _NavigationState extends State<Navigation> {
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
+        selectedIconTheme: IconThemeData(size: 28),
+        unselectedIconTheme: IconThemeData(size: 28),
         selectedItemColor: AppColors.primary,
         unselectedItemColor: Colors.grey,
         selectedLabelStyle: AppTextStyles.navLabel,
