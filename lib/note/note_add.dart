@@ -123,61 +123,81 @@ class _QuickAddScreenState extends State<QuickAddScreen> {
     final url = widget.existingNote != null
         ? Uri.parse('${AppConfig.baseUrl}/note/update/${widget.existingNote!['id']}')
         : Uri.parse('${AppConfig.baseUrl}/note/add');
-    final response = await http.post(
-      url,
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'category': _selectedCategory,
-        'content': _contentController.text,
-        'amount': int.parse(_amountController.text),
-        'isRegularExpense': isRegularExpense,
-        'notifyOverspend': notifyOverspend,
-        'createdAt': _selectedDateTime.toIso8601String(),
-        'memo': _memoController.text,
-        'isIncome': isIncome,
-        'userID': userID,
-      }),
-    );
-
-    final bodyString = utf8.decode(response.bodyBytes);
-    print("서버 응답 : $bodyString");
+    final response = widget.existingNote != null
+      ? await http.put(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'category': _selectedCategory,
+          'content': _contentController.text,
+          'amount': int.parse(_amountController.text),
+          'isRegularExpense': isRegularExpense,
+          'notifyOverspend': notifyOverspend,
+          'createdAt': _selectedDateTime.toIso8601String(),
+          'memo': _memoController.text,
+          'isIncome': isIncome,
+          'userID': userID,
+        }),
+        )
+      : await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'category': _selectedCategory,
+          'content': _contentController.text,
+          'amount': int.parse(_amountController.text),
+          'isRegularExpense': isRegularExpense,
+          'notifyOverspend': notifyOverspend,
+          'createdAt': _selectedDateTime.toIso8601String(),
+          'memo': _memoController.text,
+          'isIncome': isIncome,
+          'userID': userID,
+        }),
+      );
 
     if (response.statusCode == 200) {
-      try {
-        final decoded = jsonDecode(bodyString);
-        final now = DateTime.now().toIso8601String();
+      final bodyString = utf8.decode(response.bodyBytes);
+      print("서버 응답 : $bodyString");
 
-        // 1. notifyOverspend이 true일 경우, 로컬에도 저장
-        if (notifyOverspend && !isIncome) {
-          final uuid = Uuid().v4();
-          await ReminderManager.saveReminderItem(
-            id: uuid,
-            content: _contentController.text,
-            category: _selectedCategory ?? '',
-            amount: _amountController.text,
-            createdAt: now,
-          );
-        }
-        if (decoded is Map &&
-            decoded.containsKey('recommendation') &&
-            (decoded['recommendation'] as String).trim().isNotEmpty) {
-          showDialog(
-            context: context,
-            builder: (_) => AlertDialog(
-              title: Text('과소비 알림'),
-              content: Text(decoded['recommendation']),
-              actions: [TextButton(onPressed: () => Navigator.pop(context), child: Text('확인'))],
-            ),
-          );
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('저장 완료!')));
-        }
+      final now = DateTime.now().toIso8601String();
 
-        _resetForm();
+      // 1. notifyOverspend이 true일 경우, 로컬에도 저장
+      if (notifyOverspend && !isIncome) {
+        final uuid = Uuid().v4();
+        await ReminderManager.saveReminderItem(
+          id: uuid,
+          content: _contentController.text,
+          category: _selectedCategory ?? '',
+          amount: _amountController.text,
+          createdAt: now,
+        );
+      }
+      try{
+        if(bodyString.trim().startsWith('{')){
+          final decoded = jsonDecode(bodyString);
+          if (decoded is Map &&
+              decoded.containsKey('recommendation') &&
+              (decoded['recommendation'] as String).trim().isNotEmpty) {
+            showDialog(
+              context: context,
+              builder: (_) => AlertDialog(
+                title: Text('과소비 알림'),
+                content: Text(decoded['recommendation']),
+                actions: [TextButton(onPressed: () {Navigator.pop(context); Navigator.pop(context,true);}, child: Text('확인'))],
+              ),
+            );
+            return;
+          }
+        }
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('저장 완료!')));
+        Navigator.pop(context,true);
 
       } catch (e) {
+        print("JSON 파싱 오류: $e");
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('서버 응답 오류')));
+        Navigator.pop(context,true);
       }
+      _resetForm();
     } else {
       print("에러 상태코드 : ${response.statusCode}");
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('저장 실패')));
