@@ -145,89 +145,98 @@ class _GroupPostDetailScreenState extends State<GroupPostDetailScreen> {
             ),
         ],
       ),
-      body: _buildPostContent(postAuthorEmail, postDate),
-    );
-  }
-
-  Widget _buildPostContent(String postAuthorEmail, String postDate) {
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child:SingleChildScrollView(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(post['title'] ?? '제목 없음',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-          SizedBox(height: 8),
-          Text('익명 | $postDate', style: TextStyle(color: Colors.grey)),
-          SizedBox(height: 16),
-          Text(post['content'] ?? '', style: TextStyle(fontSize: 16)),
-          SizedBox(height: 24),
-          Row(
-            children: [
-              IconButton(
-                icon: Icon(likedPost ? Icons.thumb_up : Icons.thumb_up_alt_outlined),
-                onPressed: likedPost
-                    ? () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('이미 추천하셨습니다.')),
-                  );
-                }
-                    : () {
-                  setState(() {
-                    likes++;
-                    likedPost = true;
-                  });
-                },
-              ),
-              Text('$likes'),
-              SizedBox(width: 16),
-              Icon(Icons.comment, size: 20),
-              SizedBox(width: 4),
-              Text('${comments.length}')
-            ],
-          ),
-          Divider(height: 32),
-          _buildCommentList(postAuthorEmail),
-          Divider(),
-          if (replyingToIndex != null)
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: ListView(
+          children: [
+            Text(post['title'] ?? '제목 없음',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+            SizedBox(height: 8),
+            Text('익명 | $postDate', style: TextStyle(color: Colors.grey)),
+            SizedBox(height: 16),
+            Text(post['content'] ?? '', style: TextStyle(fontSize: 16)),
+            SizedBox(height: 24),
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('대댓글 작성 중'),
-                TextButton(
-                  onPressed: () => setState(() => replyingToIndex = null),
-                  child: Text('취소'),
+                IconButton(
+                  icon: Icon(likedPost ? Icons.thumb_up : Icons.thumb_up_alt_outlined),
+                  onPressed: likedPost
+                      ? () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('이미 추천하셨습니다.')),
+                    );
+                  }
+                      : () {
+                    setState(() {
+                      likes++;
+                      likedPost = true;
+                    });
+                  },
                 ),
+                Text('$likes'),
+                SizedBox(width: 16),
+                Icon(Icons.comment, size: 20),
+                SizedBox(width: 4),
+                Text('${comments.length}')
               ],
             ),
-          TextField(
-            controller: _commentController,
-            decoration: InputDecoration(
-              hintText: replyingToIndex == null ? '댓글을 입력하세요' : '대댓글을 입력하세요',
-              border: OutlineInputBorder(),
-              filled: true,
-              fillColor: Colors.white,
-            ),
-            maxLines: null,
-          ),
-          const SizedBox(height: 8),
-          Align(
-            alignment: Alignment.centerRight,
-            child: ElevatedButton(
-              onPressed: _submitComment,
-              child: const Text('등록'),
-            ),
-          ),
-        ],
+            Divider(height: 32),
+            _buildCommentList(postAuthorEmail),
+            if (replyingToIndex != null)
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text('대댓글 작성 중'),
+                  TextButton(
+                    onPressed: () => setState(() => replyingToIndex = null),
+                    child: Text('취소'),
+                  ),
+                ],
+              ),
+          ],
+        ),
       ),
-    ),
+      bottomNavigationBar: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _commentController,
+                  decoration: InputDecoration(
+                    hintText: replyingToIndex == null ? '댓글을 입력하세요' : '대댓글을 입력하세요',
+                    border: OutlineInputBorder(),
+                    filled: true,
+                    fillColor: Colors.white,
+                  ),
+                  maxLines: null,
+                ),
+              ),
+              SizedBox(width: 8),
+        SizedBox(
+          height: 50,
+          child: ElevatedButton(
+            onPressed: _submitComment,
+            style: ElevatedButton.styleFrom(
+              padding: EdgeInsets.symmetric(horizontal: 16),
+            ),
+            child: Text('등록'),
+          ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
   Widget _buildCommentList(String postAuthorEmail) {
-    return Expanded(
+    return Container(
+      constraints: BoxConstraints(maxHeight: 300),
       child: ListView.builder(
+        shrinkWrap: true,
+        physics: NeverScrollableScrollPhysics(),
         itemCount: comments.length,
         itemBuilder: (context, index) {
           final comment = comments[index];
