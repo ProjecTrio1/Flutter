@@ -62,6 +62,33 @@ class _GroupScrapScreenState extends State<GroupScrapScreen> {
               trailing: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
+                  IconButton(
+                    icon: Icon(Icons.bookmark_remove),
+                    onPressed: () async {
+                      final postId = post['id'];
+                      final url = Uri.parse('${AppConfig.baseUrl}/question/scrap/$postId');
+                      try {
+                        final response = await http.post(url);
+                        if (response.statusCode == 200) {
+                          setState(() {
+                            scrapedPosts.removeAt(index);
+                          });
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('스크랩이 해제되었습니다.')),
+                          );
+                        } else {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('스크랩 해제 실패: ${response.statusCode}')),
+                          );
+                        }
+                      } catch (e) {
+                        print('스크랩 해제 오류: $e');
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('스크랩 해제 중 오류 발생')),
+                        );
+                      }
+                    },
+                  ),
                   Icon(Icons.thumb_up_alt_outlined, size: 16),
                   SizedBox(width: 4),
                   Text('${(post['voter'] as List?)?.length ?? 0}'),
