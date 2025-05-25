@@ -4,48 +4,10 @@ import 'post_best.dart';
 import 'post_add.dart';
 import 'post_detail.dart';
 import 'post_scrap.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 
-// todo: 예시 데이터 그냥 전체 글 익명으로 표시! 그룹화도 안함 그냥 하나로 만들어도 돼
-final List<Map<String, dynamic>> dummyPosts = [
-  {
-    'title': '제목1',
-    'content': '길게길게 길게길게길게길게길게길게길게길게길게길게길게길게'
-        '길게길게길게길게길게길게길게길게길게길게길게길게길게길게길게길게',
-    'author': 'admin1@gmail.com',
-    'likes': 5,
-    'scraps': 2,
-    'date': '05/04 18:45',
-    'anonymous': true,
-    'comments': [
-      {
-        'content': '댓글',
-        'author': 'user1@gmail.com',
-        'likes': 1,
-        'date': '05/04 18:50',
-        'anonymous': false,
-      },
-      {
-        'content': '댓글2',
-        'author': 'admin1@gmail.com',
-        'likes': 0,
-        'date': '05/04 19:10',
-        'anonymous': true,
-      },
-    ],
-  },
-  {
-    'title': '제목2',
-    'content': '짧게',
-    'author': 'test1@gmail.com',
-    'likes': 12,
-    'scraps': 1,
-    'date': '05/04 15:00',
-    'anonymous': false,
-    'comments': [],
-  },
-];
-
-class GroupHomeScreen extends StatelessWidget {
+class GroupHomeScreen extends StatefulWidget {
   final String username;
   final int userID;
 
@@ -56,12 +18,46 @@ class GroupHomeScreen extends StatelessWidget {
   });
 
   @override
+  State<GroupHomeScreen> createState() => _GroupHomeScreenState();
+}
+
+class _GroupHomeScreenState extends State<GroupHomeScreen> {
+  List<Map<String, dynamic>> posts = [];
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchPosts();
+  }
+
+  Future<void> _fetchPosts() async {
+    try {
+      final response = await http.get(Uri.parse('${AppConfig.baseUrl}/question/list'));
+      if (response.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(utf8.decode(response.bodyBytes));
+        setState(() {
+          posts = data.cast<Map<String, dynamic>>();
+          isLoading = false;
+        });
+      } else {
+        throw Exception('서버 오류: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('불러오기 실패: $e');
+      setState(() {
+        isLoading = false;
+      });
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: Row(
           children: [
-            Text('커뮤니티'),
+            Text(' '),
             SizedBox(width: 8),
           ],
         ),
@@ -88,21 +84,34 @@ class GroupHomeScreen extends StatelessWidget {
           ),
         ],
       ),
-      body: ListView.builder(
-        itemCount: dummyPosts.length,
+      body: isLoading
+          ? Center(child: CircularProgressIndicator())
+          : posts.isEmpty
+          ? Center(child: Text('등록된 글이 없습니다.'))
+          : ListView.builder(
+        itemCount: posts.length,
         itemBuilder: (context, index) {
-          final post = dummyPosts[index];
+          final post = posts[index];
+          final authorText = post['anonymous'] == true
+              ? '익명'
+              : post['author']['username'] ?? '알 수 없음';
+          final dateStr = post['createDate']?.substring(0, 10) ?? '날짜 없음';
+
           return Card(
             margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: ListTile(
-              title: Text(post['title']),
+              title: Text(post['subject'] ?? '제목 없음'),
               subtitle: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(post['content'], maxLines: 2, overflow: TextOverflow.ellipsis),
+                  Text(
+                    post['content'] ?? '',
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                   SizedBox(height: 4),
                   Text(
-                    '작성자: 익명',
+                    '$authorText | $dateStr',
                     style: TextStyle(fontSize: 12, color: Colors.grey),
                   ),
                 ],
@@ -112,11 +121,11 @@ class GroupHomeScreen extends StatelessWidget {
                 children: [
                   Icon(Icons.thumb_up_alt_outlined, size: 16),
                   SizedBox(width: 4),
-                  Text('${post['likes']}'),
+                  Text('${(post['voter'] as List?)?.length ?? 0}'),
                   SizedBox(width: 8),
                   Icon(Icons.comment, size: 16),
                   SizedBox(width: 4),
-                  Text('${post['comments'].length}'),
+                  Text('${(post['answerList'] as List?)?.length ?? 0}'),
                 ],
               ),
               onTap: () {
@@ -132,8 +141,11 @@ class GroupHomeScreen extends StatelessWidget {
         },
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.pushNamed(context, '/group/add');
+        onPressed: () async {
+          final result = await Navigator.pushNamed(context, '/group/add');
+          if (result == true) {
+            await _fetchPosts();
+          }
         },
         child: Icon(Icons.create),
         tooltip: '글쓰기',

@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:intl/intl.dart';
 import '../config.dart';
 import 'post_add.dart';
-import 'post_scrap.dart';
 
 class GroupPostDetailScreen extends StatefulWidget {
   final Map<String, dynamic> post;
@@ -14,101 +17,228 @@ class GroupPostDetailScreen extends StatefulWidget {
 
 class _GroupPostDetailScreenState extends State<GroupPostDetailScreen> {
   late Map<String, dynamic> post;
-  int likes = 0;
-  int scraps = 0;
+  List<Map<String, dynamic>> comments = [];
+  String? currentUserEmail;
+  final TextEditingController _commentController = TextEditingController();
   bool likedPost = false;
   bool isScrapped = false;
-
-  List<Map<String, dynamic>> comments = [];
-  Set<int> likedCommentIndexes = {};
-  Set<String> likedReplyIds = {};
-  int? replyingToIndex;
-
-  final TextEditingController _commentController = TextEditingController();
-  final String currentUserEmail = 'admin1@gmail.com'; // 예시 사용자
+  int likes = 0;
 
   @override
   void initState() {
     super.initState();
     post = Map.from(widget.post);
-    likes = post['likes'] ?? 0;
-    scraps = post['scraps'] ?? 0;
-    comments = List<Map<String, dynamic>>.from(post['comments'] ?? []);
+    likes = (post['voter'] as List?)?.length ?? 0;
+    _loadUserEmail().then((_) {
+      _checkIfScrapped();
+      _fetchComments();
+    });
   }
 
-  void _submitComment() {
-    final content = _commentController.text.trim();
-    if (content.isEmpty) return;
-
-    final newComment = {
-      'content': content,
-      'author': currentUserEmail,
-      'date': '05/16 23:45',
-      'likes': 0,
-      'replies': [],
-    };
-
+  Future<void> _loadUserEmail() async {
+    final prefs = await SharedPreferences.getInstance();
     setState(() {
-      if (replyingToIndex != null) {
-        comments[replyingToIndex!]['replies'] ??= [];
-        comments[replyingToIndex!]['replies'].add(newComment);
-        replyingToIndex = null;
+      currentUserEmail = prefs.getString('email');
+    });
+  }
+
+  Future<void> _fetchComments() async {
+    final postId = post['id'];
+    final url = Uri.parse('${AppConfig.baseUrl}/answer/list/$postId');
+    try {
+      final response = await http.get(url);
+      if (response.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(utf8.decode(response.bodyBytes));
+        setState(() {
+          comments = data.cast<Map<String, dynamic>>();
+        });
       } else {
-        comments.add(newComment);
+        print('댓글 불러오기 실패: ${response.statusCode}');
       }
-    });
-
-    _commentController.clear();
-  }
-
-  void toggleScrap() {
-    setState(() {
-      isScrapped = true;
-      scraps++;
-      if (!scrapedPosts.contains(post)) {
-        scrapedPosts.add(post);
-      }
-    });
-  }
-
-  void _editPost() async {
-    final updated = await Navigator.push<Map<String, dynamic>>(
-      context,
-      MaterialPageRoute(
-        builder: (_) => GroupPostAddScreen(existingPost: post),
-      ),
-    );
-    if (updated != null) {
-      setState(() {
-        post = updated;
-      });
+    } catch (e) {
+      print('댓글 불러오기 오류: $e');
     }
   }
 
-  void _deletePost() {
+  Future<void> _submitComment() async {
+    final content = _commentController.text.trim();
+    if (content.isEmpty) return;
+
+    final postId = post['id'];
+    final url = Uri.parse('${AppConfig.baseUrl}/answer/create/$postId');
+
+    try {
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'content': content}),
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        _commentController.clear();
+        await _fetchComments();
+      } else {
+        print('댓글 등록 실패: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('댓글 등록 오류: $e');
+    }
+  }
+
+  Future<void> _checkIfScrapped() async {
+    final postId = post['id'];
+    final url = Uri.parse('${AppConfig.baseUrl}/user/myscrap');
+    try {
+      final response = await http.get(url);
+      if (response.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(utf8.decode(response.bodyBytes));
+        final scrappedIds = data.map((e) => e['id']).toSet();
+        setState(() {
+          isScrapped = scrappedIds.contains(postId);
+        });
+      }
+    } catch (e) {
+      print('스크랩 상태 확인 실패: $e');
+    }
+  }
+
+  Future<void> _votePost() async {
+    if (likedPost) return;
+
+    final postId = post['id'];
+    final url = Uri.parse('${AppConfig.baseUrl}/question/vote/$postId');
+    try {
+      final response = await http.get(url);
+      if (response.statusCode == 200) {
+        setState(() {
+          likes++;
+          likedPost = true;
+        });
+      } else {
+        print('추천 실패: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('추천 오류: $e');
+    }
+  }
+
+  Future<void> _voteComment(int commentId) async {
+    final url = Uri.parse('${AppConfig.baseUrl}/answer/vote/$commentId');
+    try {
+      final response = await http.get(url);
+      if (response.statusCode == 200) {
+        await _fetchComments();
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('댓글 추천 실패: ${response.statusCode}')),
+        );
+      }
+    } catch (e) {
+      print('댓글 추천 예외: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('댓글 추천 중 오류 발생')),
+      );
+    }
+  }
+
+  void _editComment(BuildContext context, Map<String, dynamic> comment) {
+    final TextEditingController _editController =
+    TextEditingController(text: comment['content'] ?? '');
+
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        title: Text('게시글 삭제'),
-        content: Text('정말 삭제하시겠습니까?'),
+        title: Text('댓글 수정'),
+        content: TextField(
+          controller: _editController,
+          maxLines: null,
+          decoration: InputDecoration(
+            hintText: '수정할 내용을 입력하세요',
+          ),
+        ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context), child: Text('취소')),
           TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              Navigator.pop(context); // 뒤로 이동
+            onPressed: () async {
+              final updatedContent = _editController.text.trim();
+              if (updatedContent.isNotEmpty) {
+                final url = Uri.parse('${AppConfig.baseUrl}/answer/modify/${comment['id']}');
+                final response = await http.put(
+                  url,
+                  headers: {'Content-Type': 'application/json'},
+                  body: jsonEncode({'content': updatedContent}),
+                );
+
+                if (response.statusCode == 200) {
+                  Navigator.pop(context);
+                  await _fetchComments();
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('수정 실패: ${response.statusCode}')),
+                  );
+                }
+              }
             },
-            child: Text('확인'),
+            child: Text('수정'),
           ),
         ],
       ),
     );
   }
 
+  void _deleteComment(int commentId) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: Text('댓글 삭제'),
+        content: Text('정말 삭제하시겠습니까?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: Text('취소')),
+          TextButton(onPressed: () => Navigator.pop(context, true), child: Text('확인')),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      final url = Uri.parse('${AppConfig.baseUrl}/answer/delete/$commentId');
+      final response = await http.get(url);
+      if (response.statusCode == 200 || response.statusCode == 204) {
+        await _fetchComments();
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('삭제 실패: ${response.statusCode}')),
+        );
+      }
+    }
+  }
+
+  Future<void> _toggleScrap() async {
+    final postId = post['id'];
+    final url = Uri.parse('${AppConfig.baseUrl}/question/scrap/$postId');
+    try {
+      final response = await http.post(url);
+      if (response.statusCode == 200) {
+        final message = utf8.decode(response.bodyBytes);
+        final added = message.contains('스크랩되었습니다');
+        setState(() {
+          isScrapped = added;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('스크랩 실패')));
+      }
+    } catch (e) {
+      print('스크랩 예외: $e');
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('스크랩 중 오류 발생')));
+    }
+  }
+
+
   @override
   Widget build(BuildContext context) {
-    final postAuthorEmail = post['author'] ?? '';
-    final postDate = post['date'] ?? '날짜 없음';
+    final postEmail = post['author']?['email'] ?? '';
+    final postDate = post['createDate'] ?? '';
+    final formatter = DateFormat('yyyy-MM-dd HH:mm');
 
     return Scaffold(
       appBar: AppBar(
@@ -120,22 +250,42 @@ class _GroupPostDetailScreenState extends State<GroupPostDetailScreen> {
               color: isScrapped ? Colors.orange : null,
             ),
             tooltip: '스크랩',
-            onPressed: isScrapped
-                ? null
-                : () {
-              toggleScrap();
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('스크랩되었습니다.')),
-              );
-            },
+            onPressed: _toggleScrap,
           ),
-          if (postAuthorEmail == currentUserEmail)
+          if (currentUserEmail == postEmail)
             PopupMenuButton<String>(
-              onSelected: (value) {
+              onSelected: (value) async {
                 if (value == 'edit') {
-                  _editPost();
+                  final updated = await Navigator.push<Map<String, dynamic>>(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => GroupPostAddScreen(existingPost: post),
+                    ),
+                  );
+                  if (updated != null) {
+                    setState(() => post = updated);
+                  }
                 } else if (value == 'delete') {
-                  _deletePost();
+                  final confirm = await showDialog<bool>(
+                    context: context,
+                    builder: (_) => AlertDialog(
+                      title: Text('게시글 삭제'),
+                      content: Text('정말 삭제하시겠습니까?'),
+                      actions: [
+                        TextButton(onPressed: () => Navigator.pop(context, false), child: Text('취소')),
+                        TextButton(onPressed: () => Navigator.pop(context, true), child: Text('확인')),
+                      ],
+                    ),
+                  );
+                  if (confirm == true) {
+                    final res = await http.get(Uri.parse('${AppConfig.baseUrl}/question/delete/${post['id']}'));
+                    if (res.statusCode == 200 || res.statusCode == 204) {
+                      Navigator.pop(context);
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('삭제 완료')));
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('삭제 실패')));
+                    }
+                  }
                 }
               },
               itemBuilder: (_) => [
@@ -145,243 +295,77 @@ class _GroupPostDetailScreenState extends State<GroupPostDetailScreen> {
             ),
         ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: ListView(
-          children: [
-            Text(post['title'] ?? '제목 없음',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-            SizedBox(height: 8),
-            Text('익명 | $postDate', style: TextStyle(color: Colors.grey)),
-            SizedBox(height: 16),
-            Text(post['content'] ?? '', style: TextStyle(fontSize: 16)),
-            SizedBox(height: 24),
-            Row(
-              children: [
-                IconButton(
-                  icon: Icon(likedPost ? Icons.thumb_up : Icons.thumb_up_alt_outlined),
-                  onPressed: likedPost
-                      ? () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('이미 추천하셨습니다.')),
-                    );
-                  }
-                      : () {
-                    setState(() {
-                      likes++;
-                      likedPost = true;
-                    });
-                  },
-                ),
-                Text('$likes'),
-                SizedBox(width: 16),
-                Icon(Icons.comment, size: 20),
-                SizedBox(width: 4),
-                Text('${comments.length}')
-              ],
-            ),
-            Divider(height: 32),
-            _buildCommentList(postAuthorEmail),
-            if (replyingToIndex != null)
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text('대댓글 작성 중'),
-                  TextButton(
-                    onPressed: () => setState(() => replyingToIndex = null),
-                    child: Text('취소'),
-                  ),
-                ],
-              ),
-          ],
-        ),
-      ),
-      bottomNavigationBar: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          child: Row(
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          Text(post['subject'] ?? '제목 없음',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+          SizedBox(height: 8),
+          Text(post['content'] ?? '', style: TextStyle(fontSize: 16)),
+          SizedBox(height: 12),
+          Text('익명 | ${postDate.toString().substring(0, 10)}', style: TextStyle(color: Colors.grey)),
+          SizedBox(height: 16),
+          Row(
             children: [
-              Expanded(
-                child: TextField(
-                  controller: _commentController,
-                  decoration: InputDecoration(
-                    hintText: replyingToIndex == null ? '댓글을 입력하세요' : '대댓글을 입력하세요',
-                    border: OutlineInputBorder(),
-                    filled: true,
-                    fillColor: Colors.white,
-                  ),
-                  maxLines: null,
-                ),
+              IconButton(
+                icon: Icon(likedPost ? Icons.thumb_up : Icons.thumb_up_alt_outlined),
+                onPressed: _votePost,
               ),
-              SizedBox(width: 8),
-        SizedBox(
-          height: 50,
-          child: ElevatedButton(
-            onPressed: _submitComment,
-            style: ElevatedButton.styleFrom(
-              padding: EdgeInsets.symmetric(horizontal: 16),
-            ),
-            child: Text('등록'),
-          ),
-              ),
+              Text('$likes 추천'),
             ],
           ),
-        ),
-      ),
-    );
-  }
+          Divider(height: 32),
+          Text('댓글 ${comments.length}', style: TextStyle(fontWeight: FontWeight.bold)),
+          ...comments.map((comment) {
+            final isAuthor = comment['author'] == postEmail;
+            final displayName = isAuthor ? '익명 (작성자)' : '익명';
+            final content = comment['content'] ?? '';
+            final date = comment['createDate']?.toString().substring(0, 16) ?? '';
+            final likes = comment['likes'] ?? 0;
 
-  Widget _buildCommentList(String postAuthorEmail) {
-    return Container(
-      constraints: BoxConstraints(maxHeight: 300),
-      child: ListView.builder(
-        shrinkWrap: true,
-        physics: NeverScrollableScrollPhysics(),
-        itemCount: comments.length,
-        itemBuilder: (context, index) {
-          final comment = comments[index];
-          final commentAuthorEmail = comment['author'] ?? '';
-          final isAuthor = commentAuthorEmail == postAuthorEmail;
-          final commentDisplayName = isAuthor ? '익명 (작성자)' : '익명';
-          final commentDate = comment['date'] ?? '';
-
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              ListTile(
-                title: Text(comment['content'] ?? ''),
-                subtitle: Text('$commentDisplayName | $commentDate'),
-                trailing: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    IconButton(
-                      icon: Icon(
-                        likedCommentIndexes.contains(index)
-                            ? Icons.thumb_up
-                            : Icons.thumb_up_outlined,
-                        size: 16,
-                      ),
-                      onPressed: likedCommentIndexes.contains(index)
-                          ? () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('이미 추천하셨습니다.')),
-                        );
-                      }
-                          : () {
-                        setState(() {
-                          comment['likes'] = (comment['likes'] ?? 0) + 1;
-                          likedCommentIndexes.add(index);
-                        });
-                      },
-                    ),
-                    SizedBox(width: 4),
-                    Text('${comment['likes'] ?? 0}'),
+            return ListTile(
+              title: Text(content),
+              subtitle: Text('$displayName | $date'),
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    icon: Icon(Icons.thumb_up_alt_outlined, size: 16),
+                    onPressed: () => _voteComment(comment['id']),
+                  ),
+                  SizedBox(width: 4),
+                  Text('$likes'),
+                  if (comment['author'] == currentUserEmail)
                     PopupMenuButton<String>(
                       onSelected: (value) {
-                        if (value == 'reply') {
-                          setState(() => replyingToIndex = index);
+                        if (value == 'edit') {
+                          _editComment(context, comment);
                         } else if (value == 'delete') {
-                          showDialog(
-                            context: context,
-                            builder: (_) => AlertDialog(
-                              title: Text('댓글 삭제'),
-                              content: Text('정말 삭제하시겠습니까?'),
-                              actions: [
-                                TextButton(onPressed: () => Navigator.pop(context), child: Text('취소')),
-                                TextButton(
-                                  onPressed: () {
-                                    setState(() => comments.removeAt(index));
-                                    Navigator.pop(context);
-                                  },
-                                  child: Text('확인'),
-                                ),
-                              ],
-                            ),
-                          );
+                          _deleteComment(comment['id']);
                         }
                       },
                       itemBuilder: (_) => [
-                        PopupMenuItem(value: 'reply', child: Text('대댓글 달기')),
-                        if (comment['author'] == currentUserEmail)
-                          PopupMenuItem(value: 'delete', child: Text('삭제')),
+                        PopupMenuItem(value: 'edit', child: Text('수정')),
+                        PopupMenuItem(value: 'delete', child: Text('삭제')),
                       ],
                     ),
-                  ],
-                ),
+                ],
               ),
-              ...(comment['replies'] ?? []).asMap().entries.map((entry) {
-                final reply = entry.value;
-                final isReplyAuthor = reply['author'] == postAuthorEmail;
-                final replyDisplay = isReplyAuthor ? '익명 (작성자)' : '익명';
-                final replyKey = '$index-${entry.key}';
-
-                return Padding(
-                  padding: const EdgeInsets.only(left: 40.0),
-                  child: ListTile(
-                    title: Text(reply['content'] ?? ''),
-                    subtitle: Text('$replyDisplay | ${reply['date'] ?? ''}'),
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        IconButton(
-                          icon: Icon(
-                            likedReplyIds.contains(replyKey)
-                                ? Icons.thumb_up
-                                : Icons.thumb_up_outlined,
-                            size: 16,
-                          ),
-                          onPressed: likedReplyIds.contains(replyKey)
-                              ? () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text('이미 추천하셨습니다.')),
-                            );
-                          }
-                              : () {
-                            setState(() {
-                              reply['likes'] = (reply['likes'] ?? 0) + 1;
-                              likedReplyIds.add(replyKey);
-                            });
-                          },
-                        ),
-                        SizedBox(width: 4),
-                        Text('${reply['likes'] ?? 0}'),
-                        if (reply['author'] == currentUserEmail)
-                          PopupMenuButton<String>(
-                            onSelected: (value) {
-                              if (value == 'delete') {
-                                showDialog(
-                                  context: context,
-                                  builder: (_) => AlertDialog(
-                                    title: Text('대댓글 삭제'),
-                                    content: Text('정말 삭제하시겠습니까?'),
-                                    actions: [
-                                      TextButton(onPressed: () => Navigator.pop(context), child: Text('취소')),
-                                      TextButton(
-                                        onPressed: () {
-                                          setState(() {
-                                            comments[index]['replies'].removeAt(entry.key);
-                                          });
-                                          Navigator.pop(context);
-                                        },
-                                        child: Text('확인'),
-                                      ),
-                                    ],
-                                  ),
-                                );
-                              }
-                            },
-                            itemBuilder: (_) => [
-                              PopupMenuItem(value: 'delete', child: Text('삭제')),
-                            ],
-                          ),
-                      ],
-                    ),
-                  ),
-                );
-              }).toList(),
-            ],
-          );
-        },
+            );
+          }),
+          const SizedBox(height: 16),
+          TextField(
+            controller: _commentController,
+            decoration: InputDecoration(
+              hintText: '댓글 입력',
+              border: OutlineInputBorder(),
+              suffixIcon: IconButton(
+                icon: Icon(Icons.send),
+                onPressed: _submitComment,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

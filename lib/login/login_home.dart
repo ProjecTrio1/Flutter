@@ -48,6 +48,7 @@ class _LoginHomeState extends State<LoginHome> {
 
         final share = await SharedPreferences.getInstance();
         await share.setInt('userID', userID);
+        await share.setString('email', email);
 
         Navigator.pushReplacement(
           context,

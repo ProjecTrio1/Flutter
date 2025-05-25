@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import '../config.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:http/http.dart' as http;
 import 'dart:io';
+import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../login/http_helper.dart';
 
 class GroupPostAddScreen extends StatefulWidget {
   final Map<String, dynamic>? existingPost;
@@ -18,17 +22,60 @@ class _GroupPostAddScreenState extends State<GroupPostAddScreen> {
   File? _selectedImage;
 
   final bool _isAnonymous = true;
-  final String currentUserEmail = 'admin1@gmail.com'; // 로그인 사용자 가정
 
   @override
   void initState() {
     super.initState();
-
     if (widget.existingPost != null) {
       _titleController.text = widget.existingPost!['title'] ?? '';
       _contentController.text = widget.existingPost!['content'] ?? '';
-      // todo: 아직 이미지 테스트를 못함..
-      // _selectedImage = File(widget.existingPost!['imagePath']);
+    }
+  }
+
+  Future<void> _submitPost() async {
+    final title = _titleController.text.trim();
+    final content = _contentController.text.trim();
+
+    if (title.isEmpty || content.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('제목과 내용을 모두 입력해주세요')),
+      );
+      return;
+    }
+
+    try {
+      final body = jsonEncode({'subject': title, 'content': content});
+
+      late final http.Response response;
+      if (widget.existingPost != null && widget.existingPost!['id'] != null) {
+        // 수정 요청
+        final id = widget.existingPost!['id'];
+        response = await HttpClientWithCookies.post(
+          Uri.parse('${AppConfig.baseUrl}/question/modify/$id'),
+          headers: {'Content-Type': 'application/json'},
+          body: body,
+        );
+      } else {
+        // 새 글 등록
+        response = await HttpClientWithCookies.post(
+          Uri.parse('${AppConfig.baseUrl}/question/create'),
+          headers: {'Content-Type': 'application/json'},
+          body: body,
+        );
+      }
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        Navigator.pop(context, true);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('요청 실패 (${response.statusCode})')),
+        );
+      }
+    } catch (e) {
+      print('에러 발생: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('요청 중 오류가 발생했습니다')),
+      );
     }
   }
 
@@ -40,31 +87,6 @@ class _GroupPostAddScreenState extends State<GroupPostAddScreen> {
         _selectedImage = File(image.path);
       });
     }
-  }
-
-  void _submitPost() {
-    final title = _titleController.text.trim();
-    final content = _contentController.text.trim();
-
-    if (title.isEmpty || content.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('제목과 내용을 모두 입력해주세요')),
-      );
-      return;
-    }
-
-    final post = {
-      'title': title,
-      'content': content,
-      'author': currentUserEmail,
-      'anonymous': _isAnonymous,
-      'likes': widget.existingPost?['likes'] ?? 0,
-      'scraps': widget.existingPost?['scraps'] ?? 0,
-      'date': widget.existingPost?['date'] ?? '05/16 23:45',
-      'comments': widget.existingPost?['comments'] ?? [],
-    };
-
-    Navigator.pop(context, post);
   }
 
   @override
@@ -81,7 +103,6 @@ class _GroupPostAddScreenState extends State<GroupPostAddScreen> {
           )
         ],
       ),
-      resizeToAvoidBottomInset: true,
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(
