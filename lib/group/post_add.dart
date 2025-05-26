@@ -27,7 +27,7 @@ class _GroupPostAddScreenState extends State<GroupPostAddScreen> {
   void initState() {
     super.initState();
     if (widget.existingPost != null) {
-      _titleController.text = widget.existingPost!['title'] ?? '';
+      _titleController.text = widget.existingPost!['subject'] ?? '';
       _contentController.text = widget.existingPost!['content'] ?? '';
     }
   }
@@ -69,13 +69,15 @@ class _GroupPostAddScreenState extends State<GroupPostAddScreen> {
       }
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        if(mounted){
+        if (mounted) {
           Navigator.pop(context, {
+          'refresh': true,
+          'post': {
             'id': widget.existingPost?['id'],
             'subject': title,
             'content': content,
             'author': widget.existingPost?['author'],
-            'createDate': widget.existingPost?['createDate'],
+            'createDate': widget.existingPost?['createDate'],}
           });
         }
       } else {

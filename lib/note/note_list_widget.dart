@@ -169,7 +169,7 @@ class _NoteListWidgetState extends State<NoteListWidget> {
                                 IconButton(
                                   iconSize: 24,
                                   icon: Icon(Icons.thumb_down,
-                                      color: feedback == false ? NoteColors.income : Colors.grey),
+                                      color: feedback == false ? NoteColors.expense : Colors.grey),
                                   onPressed: () async {
                                     final newFeedback = feedback == false ? null : false;
                                     await sendFeedback(id, newFeedback);

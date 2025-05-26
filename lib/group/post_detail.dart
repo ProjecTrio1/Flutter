@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
 import '../config.dart';
 import 'post_add.dart';
+import '../style/main_style.dart';
 
 class GroupPostDetailScreen extends StatefulWidget {
   final Map<String, dynamic> post;
@@ -16,6 +17,7 @@ class GroupPostDetailScreen extends StatefulWidget {
 }
 
 class _GroupPostDetailScreenState extends State<GroupPostDetailScreen> {
+  Set<int> likedCommentIndexes = {};
   late Map<String, dynamic> post;
   List<Map<String, dynamic>> comments = [];
   String? currentUserEmail;
@@ -32,6 +34,7 @@ class _GroupPostDetailScreenState extends State<GroupPostDetailScreen> {
     _loadUserEmail().then((_) {
       _checkIfScrapped();
       _fetchComments();
+      _checkIfVoted();
     });
   }
 
@@ -42,13 +45,37 @@ class _GroupPostDetailScreenState extends State<GroupPostDetailScreen> {
     });
   }
 
-  Future<void> _fetchComments() async {
+  Future<void> _fetchPostDetail() async {
     final postId = post['id'];
-    final url = Uri.parse('${AppConfig.baseUrl}/answer/list/$postId');
+    final url = Uri.parse('${AppConfig.baseUrl}/question/detail/$postId');
+    try {
+      final response = await http.get(url);
+      if (response.statusCode == 200) {
+        final data = jsonDecode(utf8.decode(response.bodyBytes));
+        setState(() {
+          post = data;
+          likes = (post['voter'] as List?)?.length ?? 0;
+        });
+        await _checkIfVoted();
+      } else {
+        print('게시글 상세 불러오기 실패: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('게시글 상세 불러오기 오류: $e');
+    }
+  }
+
+  Future<void> _fetchComments() async {
+    final prefs = await SharedPreferences.getInstance();
+    final userID = prefs.getInt('userID');
+    final postId = post['id'];
+    final url = Uri.parse('${AppConfig.baseUrl}/answer/list/$postId?userID=$userID');
+
     try {
       final response = await http.get(url);
       if (response.statusCode == 200) {
         final List<dynamic> data = jsonDecode(utf8.decode(response.bodyBytes));
+        print('댓글: ${jsonEncode(data)}');
         setState(() {
           comments = data.cast<Map<String, dynamic>>();
         });
@@ -107,35 +134,77 @@ class _GroupPostDetailScreenState extends State<GroupPostDetailScreen> {
   }
 
   Future<void> _votePost() async {
-    if (likedPost) return;
+    if (likedPost) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('이미 추천한 게시글입니다.')),
+      );
+      return;
+    }
+
     final prefs = await SharedPreferences.getInstance();
     final userID = prefs.getInt('userID');
-
     final postId = post['id'];
     final url = Uri.parse('${AppConfig.baseUrl}/question/vote/$postId?userID=$userID');
+
+    try {
+      final response = await http.get(url);
+      if (response.statusCode == 200) {
+        await _fetchPostDetail();
+
+        setState(() {
+          likedPost = true;
+          likes = post['likes'] ?? likes + 1;
+        });
+      } else if (response.statusCode == 400) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('이미 추천한 게시글입니다.')),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('게시글 추천 실패: ${response.statusCode}')),
+        );
+      }
+    } catch (e) {
+      print('추천 오류: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('게시글 추천 중 오류 발생')),
+      );
+    }
+  }
+
+
+  Future<void> _voteComment(int commentId) async {
+    if (likedCommentIndexes.contains(commentId)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('이미 추천한 댓글입니다.')),
+      );
+      return;
+    }
+
+    final prefs = await SharedPreferences.getInstance();
+    final userID = prefs.getInt('userID');
+    final url = Uri.parse('${AppConfig.baseUrl}/answer/vote/$commentId?userID=$userID');
+
     try {
       final response = await http.get(url);
       if (response.statusCode == 200) {
         setState(() {
-          likes++;
-          likedPost = true;
+          likedCommentIndexes.add(commentId);
+          comments = comments.map((c) {
+            if (c['id'] == commentId) {
+              return {
+                ...c,
+                'likes': (c['likes'] ?? 0) + 1,
+                'likedByMe': true,
+              };
+            }
+            return c;
+          }).toList();
         });
-      } else {
-        print('추천 실패: ${response.statusCode}');
-      }
-    } catch (e) {
-      print('추천 오류: $e');
-    }
-  }
-
-  Future<void> _voteComment(int commentId) async {
-    final prefs = await SharedPreferences.getInstance();
-    final userID = prefs.getInt('userID');
-    final url = Uri.parse('${AppConfig.baseUrl}/answer/vote/$commentId?userID=$userID');
-    try {
-      final response = await http.get(url);
-      if (response.statusCode == 200) {
-        await _fetchComments();
+      } else if (response.statusCode == 400) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('이미 추천한 댓글입니다.')),
+        );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('댓글 추천 실패: ${response.statusCode}')),
@@ -243,6 +312,19 @@ class _GroupPostDetailScreenState extends State<GroupPostDetailScreen> {
     }
   }
 
+  Future<void> _checkIfVoted() async {
+    final prefs = await SharedPreferences.getInstance();
+    final userID = prefs.getInt('userID');
+    final voterList = (post['voter'] as List?) ?? [];
+
+    setState(() {
+      likedPost = voterList.any((voter) {
+        final voterId = voter['id'];
+        return voterId is int ? voterId == userID : voterId.toString() == userID.toString();
+      });
+    });
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -251,13 +333,14 @@ class _GroupPostDetailScreenState extends State<GroupPostDetailScreen> {
     final formatter = DateFormat('yyyy-MM-dd HH:mm');
 
     return Scaffold(
+      resizeToAvoidBottomInset: true,
       appBar: AppBar(
         title: Text('게시글 상세'),
         actions: [
           IconButton(
             icon: Icon(
               isScrapped ? Icons.bookmark : Icons.bookmark_border,
-              color: isScrapped ? Colors.orange : null,
+              color: isScrapped ? AppColors.primary : null,
             ),
             tooltip: '스크랩',
             onPressed: _toggleScrap,
@@ -309,28 +392,33 @@ class _GroupPostDetailScreenState extends State<GroupPostDetailScreen> {
         padding: const EdgeInsets.all(16),
         children: [
           Text(post['subject'] ?? '제목 없음',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-          SizedBox(height: 8),
-          Text(post['content'] ?? '', style: TextStyle(fontSize: 16)),
-          SizedBox(height: 12),
-          Text('익명 | ${postDate.toString().substring(0, 10)}', style: TextStyle(color: Colors.grey)),
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+          SizedBox(height: 7),
+          Text('익명 | ${formatter.format(DateTime.parse(postDate))}', style: TextStyle(
+              fontSize: 12, color: Colors.grey)),
+          SizedBox(height: 20),
+          Text(post['content'] ?? '', style: TextStyle(fontSize: 18)),
           SizedBox(height: 16),
           Row(
             children: [
               IconButton(
-                icon: Icon(likedPost ? Icons.thumb_up : Icons.thumb_up_alt_outlined),
+                icon: Icon(likedPost ? Icons.thumb_up : Icons.thumb_up_alt_outlined,
+                  color: likedPost ? AppColors.primary : null, size: 22,),
                 onPressed: _votePost,
               ),
-              Text('$likes 추천'),
+              Text('$likes'),
             ],
           ),
           Divider(height: 32),
           Text('댓글 ${comments.length}', style: TextStyle(fontWeight: FontWeight.bold)),
           ...comments.map((comment) {
-            final isAuthor = comment['author'] == postEmail;
+            final commentId = comment['id'];
+            final isAuthor = comment['author']?['email'] == post['author']?['email'];
+            final alreadyLiked = comment['likedByMe'] ?? false;
             final displayName = isAuthor ? '익명 (작성자)' : '익명';
             final content = comment['content'] ?? '';
-            final date = comment['createDate']?.toString().substring(0, 16) ?? '';
+            final rawDate = comment['createDate']?.toString();
+            final date = rawDate != null ? formatter.format(DateTime.parse(rawDate)) : '';
             final likes = comment['likes'] ?? 0;
 
             return ListTile(
@@ -340,10 +428,14 @@ class _GroupPostDetailScreenState extends State<GroupPostDetailScreen> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   IconButton(
-                    icon: Icon(Icons.thumb_up_alt_outlined, size: 16),
-                    onPressed: () => _voteComment(comment['id']),
+                    icon: Icon(
+                      alreadyLiked ? Icons.thumb_up : Icons.thumb_up_alt_outlined,
+                      color: alreadyLiked ? AppColors.primary : null,
+                      size: 18,
+                    ),
+                    onPressed: () => _voteComment(commentId),
                   ),
-                  SizedBox(width: 4),
+                  SizedBox(width: 0),
                   Text('$likes'),
                   if (comment['author'] == currentUserEmail)
                     PopupMenuButton<String>(
@@ -351,7 +443,7 @@ class _GroupPostDetailScreenState extends State<GroupPostDetailScreen> {
                         if (value == 'edit') {
                           _editComment(context, comment);
                         } else if (value == 'delete') {
-                          _deleteComment(comment['id']);
+                          _deleteComment(commentId);
                         }
                       },
                       itemBuilder: (_) => [
@@ -363,20 +455,22 @@ class _GroupPostDetailScreenState extends State<GroupPostDetailScreen> {
               ),
             );
           }),
-          const SizedBox(height: 16),
-          TextField(
-            controller: _commentController,
-            decoration: InputDecoration(
-              hintText: '댓글 입력',
-              border: OutlineInputBorder(),
-              suffixIcon: IconButton(
-                icon: Icon(Icons.send),
-                onPressed: _submitComment,
-              ),
-            ),
-          ),
         ],
       ),
+      bottomNavigationBar: Padding(
+        padding: EdgeInsets.all(8),
+        child: TextField(
+          controller: _commentController,
+          decoration: InputDecoration(
+            hintText: '댓글 입력',
+            suffixIcon: IconButton(
+              icon: Icon(Icons.send),
+              onPressed: _submitComment,
+            ),
+          ),
+        ),
+      ),
+
     );
   }
 }

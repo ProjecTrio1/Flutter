@@ -114,7 +114,7 @@ class _GroupHomeScreenState extends State<GroupHomeScreen> {
                   ),
                   SizedBox(height: 4),
                   Text(
-                    '$authorText | $dateStr',
+                    '$dateStr',
                     style: TextStyle(fontSize: 12, color: Colors.grey),
                   ),
                 ],
