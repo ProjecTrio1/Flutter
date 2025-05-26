@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import '../config.dart';
 import 'post_detail.dart';
@@ -23,7 +24,9 @@ class _GroupBestScreenState extends State<GroupBestScreen> {
   }
 
   Future<void> _fetchBestPosts() async {
-    final url = Uri.parse('${AppConfig.baseUrl}/question/list');
+    final prefs = await SharedPreferences.getInstance();
+    final userID = prefs.getInt('userID');
+    final url = Uri.parse('${AppConfig.baseUrl}/question/list?userID=$userID');
     try {
       final response = await http.get(url);
       if (response.statusCode == 200) {

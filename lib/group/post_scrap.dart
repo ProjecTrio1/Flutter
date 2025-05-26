@@ -23,7 +23,9 @@ class _GroupScrapScreenState extends State<GroupScrapScreen> {
   }
 
   Future<void> _fetchScrappedPosts() async {
-    final url = Uri.parse('${AppConfig.baseUrl}/user/myscrap');
+    final prefs = await SharedPreferences.getInstance();
+    final userID = prefs.getInt('userID');
+    final url = Uri.parse('${AppConfig.baseUrl}/user/myscrap?userID=$userID');
     try {
       final response = await http.get(url);
       if (response.statusCode == 200) {

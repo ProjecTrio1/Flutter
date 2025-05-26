@@ -35,6 +35,9 @@ class _GroupPostAddScreenState extends State<GroupPostAddScreen> {
   Future<void> _submitPost() async {
     final title = _titleController.text.trim();
     final content = _contentController.text.trim();
+    final prefs = await SharedPreferences.getInstance();
+    final userID = prefs.getInt('userID');
+    print('보낼 userID: $userID');
 
     if (title.isEmpty || content.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -51,21 +54,30 @@ class _GroupPostAddScreenState extends State<GroupPostAddScreen> {
         // 수정 요청
         final id = widget.existingPost!['id'];
         response = await HttpClientWithCookies.post(
-          Uri.parse('${AppConfig.baseUrl}/question/modify/$id'),
+          Uri.parse('${AppConfig.baseUrl}/question/modify/$id?userID=$userID'),
           headers: {'Content-Type': 'application/json'},
           body: body,
         );
+
       } else {
         // 새 글 등록
         response = await HttpClientWithCookies.post(
-          Uri.parse('${AppConfig.baseUrl}/question/create'),
+          Uri.parse('${AppConfig.baseUrl}/question/create?userID=$userID'),
           headers: {'Content-Type': 'application/json'},
           body: body,
         );
       }
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        Navigator.pop(context, true);
+        if(mounted){
+          Navigator.pop(context, {
+            'id': widget.existingPost?['id'],
+            'subject': title,
+            'content': content,
+            'author': widget.existingPost?['author'],
+            'createDate': widget.existingPost?['createDate'],
+          });
+        }
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('요청 실패 (${response.statusCode})')),

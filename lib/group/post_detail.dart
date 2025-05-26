@@ -61,11 +61,13 @@ class _GroupPostDetailScreenState extends State<GroupPostDetailScreen> {
   }
 
   Future<void> _submitComment() async {
+    final prefs = await SharedPreferences.getInstance();
+    final userID = prefs.getInt('userID');
+    final postId = post['id'];
     final content = _commentController.text.trim();
     if (content.isEmpty) return;
 
-    final postId = post['id'];
-    final url = Uri.parse('${AppConfig.baseUrl}/answer/create/$postId');
+    final url = Uri.parse('${AppConfig.baseUrl}/answer/create/$postId?userID=$userID');
 
     try {
       final response = await http.post(
@@ -86,8 +88,10 @@ class _GroupPostDetailScreenState extends State<GroupPostDetailScreen> {
   }
 
   Future<void> _checkIfScrapped() async {
+    final prefs = await SharedPreferences.getInstance();
+    final userID = prefs.getInt('userID');
     final postId = post['id'];
-    final url = Uri.parse('${AppConfig.baseUrl}/user/myscrap');
+    final url = Uri.parse('${AppConfig.baseUrl}/user/myscrap?userID=$userID');
     try {
       final response = await http.get(url);
       if (response.statusCode == 200) {
@@ -104,9 +108,11 @@ class _GroupPostDetailScreenState extends State<GroupPostDetailScreen> {
 
   Future<void> _votePost() async {
     if (likedPost) return;
+    final prefs = await SharedPreferences.getInstance();
+    final userID = prefs.getInt('userID');
 
     final postId = post['id'];
-    final url = Uri.parse('${AppConfig.baseUrl}/question/vote/$postId');
+    final url = Uri.parse('${AppConfig.baseUrl}/question/vote/$postId?userID=$userID');
     try {
       final response = await http.get(url);
       if (response.statusCode == 200) {
@@ -123,7 +129,9 @@ class _GroupPostDetailScreenState extends State<GroupPostDetailScreen> {
   }
 
   Future<void> _voteComment(int commentId) async {
-    final url = Uri.parse('${AppConfig.baseUrl}/answer/vote/$commentId');
+    final prefs = await SharedPreferences.getInstance();
+    final userID = prefs.getInt('userID');
+    final url = Uri.parse('${AppConfig.baseUrl}/answer/vote/$commentId?userID=$userID');
     try {
       final response = await http.get(url);
       if (response.statusCode == 200) {
@@ -213,8 +221,10 @@ class _GroupPostDetailScreenState extends State<GroupPostDetailScreen> {
   }
 
   Future<void> _toggleScrap() async {
+    final prefs = await SharedPreferences.getInstance();
+    final userID = prefs.getInt('userID');
     final postId = post['id'];
-    final url = Uri.parse('${AppConfig.baseUrl}/question/scrap/$postId');
+    final url = Uri.parse('${AppConfig.baseUrl}/question/scrap/$postId?userID=$userID');
     try {
       final response = await http.post(url);
       if (response.statusCode == 200) {

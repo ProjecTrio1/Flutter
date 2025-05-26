@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../config.dart';
 import 'post_best.dart';
 import 'post_add.dart';
@@ -32,8 +33,10 @@ class _GroupHomeScreenState extends State<GroupHomeScreen> {
   }
 
   Future<void> _fetchPosts() async {
+    final prefs = await SharedPreferences.getInstance();
+    final userID = prefs.getInt('userID');
     try {
-      final response = await http.get(Uri.parse('${AppConfig.baseUrl}/question/list'));
+      final response = await http.get(Uri.parse('${AppConfig.baseUrl}/question/list?userID=$userID'));
       if (response.statusCode == 200) {
         final List<dynamic> data = jsonDecode(utf8.decode(response.bodyBytes));
         setState(() {
