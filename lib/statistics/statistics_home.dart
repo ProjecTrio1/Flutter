@@ -133,7 +133,13 @@ class _StatisticsHomeState extends State<StatisticsHome> {
               Text('$selectedYear년 $selectedMonth월'),
               Spacer(),
               TextButton.icon(
-                onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => AIAnalysisHomePage())),
+                onPressed: () => Navigator.push(context,
+                    MaterialPageRoute(
+                      builder: (_) => AIAnalysisHomePage(
+                        year: selectedYear,
+                        month: selectedMonth,
+                      ),
+                    )),
                 icon: Icon(Icons.smart_toy, color: AppColors.primary),
                 label: Text('AI 분석', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold)),
               )

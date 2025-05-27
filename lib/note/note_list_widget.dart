@@ -103,16 +103,15 @@ class _NoteListWidgetState extends State<NoteListWidget> {
                             children: [
                               IconButton(
                                 icon: Icon(Icons.edit, size: 18, color: Colors.grey[700]),
-                                onPressed: () {
-                                  Navigator.push(
+                                onPressed: () async {
+                                  final result = await Navigator.pushNamed(
                                     context,
-                                    MaterialPageRoute(builder: (_) => QuickAddScreen(existingNote: note)),
-                                  ).then((result) {
-                                    if (result == true) {
-                                      widget.onDataChanged();
-                                    }
-                                  });
-
+                                    '/note/add',
+                                    arguments: note,
+                                  );
+                                  if (result == true || result is DateTime) {
+                                    widget.onDataChanged();
+                                  }
                                 },
                               ),
                               IconButton(

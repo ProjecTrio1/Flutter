@@ -132,9 +132,12 @@ class _QuickAddScreenState extends State<QuickAddScreen> {
   }
 
   Future<void> submitNoteAdd() async {
-    if (_selectedCategory == null || _amountController.text.isEmpty || _createdAtController.text.isEmpty) {
+    if (_selectedCategory == null ||
+        _amountController.text.isEmpty ||
+        _createdAtController.text.isEmpty ||
+        _contentController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('카테고리, 금액, 날짜 입력은 필수입니다.')),
+        const SnackBar(content: Text('카테고리, 금액, 날짜, 내용을 모두 입력하세요.')),
       );
       return;
     }

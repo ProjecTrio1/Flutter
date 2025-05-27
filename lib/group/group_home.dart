@@ -146,7 +146,7 @@ class _GroupHomeScreenState extends State<GroupHomeScreen> {
       floatingActionButton: FloatingActionButton(
         onPressed: () async {
           final result = await Navigator.pushNamed(context, '/group/add');
-          if (result == true) {
+          if (result != null) {
             await _fetchPosts();
           }
         },

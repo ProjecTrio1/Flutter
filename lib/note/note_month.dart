@@ -253,13 +253,10 @@ class _NoteMonthScreenState extends State<NoteMonthScreen> {
       floatingActionButton: FloatingActionButton(
         heroTag: 'note_month_fab',
         onPressed: () async {
-          final result = await Navigator.push(
+          final result = await Navigator.pushNamed(
             context,
-            MaterialPageRoute(
-              builder: (_) => QuickAddScreen(
-                onSaved: () {},
-              ),
-            ),
+            '/note/add',
+            arguments: null,
           );
 
           if (result is DateTime) {

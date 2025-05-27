@@ -277,10 +277,16 @@ class _GroupPostDetailScreenState extends State<GroupPostDetailScreen> {
     );
 
     if (confirm == true) {
-      final url = Uri.parse('${AppConfig.baseUrl}/answer/delete/$commentId');
+      final prefs = await SharedPreferences.getInstance();
+      final userID = prefs.getInt('userID');
+
+      final url = Uri.parse('${AppConfig.baseUrl}/answer/delete/$commentId?userID=$userID');
       final response = await http.get(url);
       if (response.statusCode == 200 || response.statusCode == 204) {
         await _fetchComments();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('댓글이 삭제되었습니다')),
+        );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('삭제 실패: ${response.statusCode}')),
@@ -372,12 +378,18 @@ class _GroupPostDetailScreenState extends State<GroupPostDetailScreen> {
                     ),
                   );
                   if (confirm == true) {
-                    final res = await http.get(Uri.parse('${AppConfig.baseUrl}/question/delete/${post['id']}'));
+                    final prefs = await SharedPreferences.getInstance();
+                    final userID = prefs.getInt('userID');
+
+                    final res = await http.get(
+                      Uri.parse('${AppConfig.baseUrl}/question/delete/${post['id']}?userID=$userID'),
+                    );
+
                     if (res.statusCode == 200 || res.statusCode == 204) {
                       Navigator.pop(context);
                       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('삭제 완료')));
                     } else {
-                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('삭제 실패')));
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('삭제 실패: ${res.statusCode}')));
                     }
                   }
                 }
@@ -429,37 +441,30 @@ class _GroupPostDetailScreenState extends State<GroupPostDetailScreen> {
                 final userId = snapshot.data!.getInt('userID');
                 final hasVoted = voterList?.any((v) => v['id'] == userId) ?? false;
 
-                return ListTile(
-                  title: Text(content),
-                  subtitle: Text('$displayName | $date'),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      IconButton(
-                        icon: Icon(
-                          hasVoted ? Icons.thumb_up : Icons.thumb_up_alt_outlined,
-                          size: 18,
-                          color: hasVoted ? AppColors.primary : null,
+                return GestureDetector(
+                  onLongPress: () {
+                    if (comment['author']?['email'] == currentUserEmail) {
+                      _deleteComment(commentId);
+                    }
+                  },
+                  child: ListTile(
+                    title: Text(content),
+                    subtitle: Text('$displayName | $date'),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          icon: Icon(
+                            hasVoted ? Icons.thumb_up : Icons.thumb_up_alt_outlined,
+                            size: 18,
+                            color: hasVoted ? AppColors.primary : null,
+                          ),
+                          onPressed: () => _voteComment(commentId),
                         ),
-                        onPressed: () => _voteComment(commentId),
-                      ),
-                      SizedBox(width: 0),
-                      Text('$likes'),
-                      if (comment['author'] == currentUserEmail)
-                        PopupMenuButton<String>(
-                          onSelected: (value) {
-                            if (value == 'edit') {
-                              _editComment(context, comment);
-                            } else if (value == 'delete') {
-                              _deleteComment(commentId);
-                            }
-                          },
-                          itemBuilder: (_) => [
-                            PopupMenuItem(value: 'edit', child: Text('수정')),
-                            PopupMenuItem(value: 'delete', child: Text('삭제')),
-                          ],
-                        ),
-                    ],
+                        SizedBox(width: 0),
+                        Text('$likes'),
+                      ],
+                    ),
                   ),
                 );
               },

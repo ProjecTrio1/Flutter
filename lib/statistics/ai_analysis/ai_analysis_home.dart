@@ -5,9 +5,9 @@ import 'dart:convert';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
-Future<Map<String, dynamic>> fetchMonthlyReport(String userId) async {
-  final response = await http.get(Uri.parse('${AppConfig.baseUrl}/note/report/monthly/$userId'));
-  print("요청 URL: http://<서버주소>/note/report/monthly/$userId");
+Future<Map<String, dynamic>> fetchMonthlyReport(String userId,int year, int month) async {
+  final response = await http.get(Uri.parse('${AppConfig.baseUrl}/note/report/monthly/$userId?year=$year&month=$month'));
+  print("요청 URL: http://<서버주소>/note/report/monthly/$userId?year=$year&month=$month");
 
   if(response.statusCode==200){
     final decoded = utf8.decode(response.bodyBytes);
@@ -19,7 +19,9 @@ Future<Map<String, dynamic>> fetchMonthlyReport(String userId) async {
   }
 }
 class AIAnalysisHomePage extends StatefulWidget {
-  const AIAnalysisHomePage({super.key});
+  final int year;
+  final int month;
+  const AIAnalysisHomePage({super.key, required this.year, required this.month});
 
   @override
   State<AIAnalysisHomePage> createState() => _AIAnalysisHomePageState();
@@ -29,7 +31,7 @@ class _AIAnalysisHomePageState extends State<AIAnalysisHomePage>{
   @override
   void initState(){
     super.initState();
-      loadReport();
+    loadReport();
   }
   void loadReport() async{
     final prefs = await SharedPreferences.getInstance();
@@ -41,7 +43,7 @@ class _AIAnalysisHomePageState extends State<AIAnalysisHomePage>{
     }
 
     try{
-      final data = await fetchMonthlyReport(userID.toString());
+      final data = await fetchMonthlyReport(userID.toString(),widget.year,widget.month);
       setState(() {
         report = data;
       });
@@ -81,24 +83,24 @@ class _AIAnalysisHomePageState extends State<AIAnalysisHomePage>{
             return  Card(
               margin: EdgeInsets.symmetric(vertical: 8),
               child: Padding(
-                    padding: EdgeInsets.all(12),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(cat['category'] ?? "카테고리 없음"),
-                        Text("총 지출 : ${cat['totalAmount']}원 | 이상소비: ${cat['anomalyCount']}건 | 과소비: ${cat['overspendingCount']}건"),
-                        SizedBox(height: 8),
-                        ...flaggedItems.map<Widget>((item) => Card(
-                          child: ListTile(
-                            title: Text("${item['content']?.isNotEmpty ==true ?item['content']: "내용 없음"} - ${item['amount'] ?? 0}원"),
-                            subtitle: Text("${item['date'] ?? "-"} /" "${item['isAnomaly'] == true ? '이상소비' : item['isOverspending'] == true ? '과소비' : ''}"),
-                            trailing: Row(
-                              mainAxisSize: MainAxisSize.min,
-                            ),
-                          ),
-                        )),
-                      ],
-                    ),
+                padding: EdgeInsets.all(12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(cat['category'] ?? "카테고리 없음"),
+                    Text("총 지출 : ${cat['totalAmount']}원 | 이상소비: ${cat['anomalyCount']}건 | 과소비: ${cat['overspendingCount']}건"),
+                    SizedBox(height: 8),
+                    ...flaggedItems.map<Widget>((item) => Card(
+                      child: ListTile(
+                        title: Text("${item['content']?.isNotEmpty ==true ?item['content']: "내용 없음"} - ${item['amount'] ?? 0}원"),
+                        subtitle: Text("${item['date'] ?? "-"} /" "${item['isAnomaly'] == true ? '이상소비' : item['isOverspending'] == true ? '과소비' : ''}"),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                        ),
+                      ),
+                    )),
+                  ],
+                ),
               ),
             );
           }),
