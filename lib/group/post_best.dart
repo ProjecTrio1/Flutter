@@ -26,7 +26,7 @@ class _GroupBestScreenState extends State<GroupBestScreen> {
   Future<void> _fetchBestPosts() async {
     final prefs = await SharedPreferences.getInstance();
     final userID = prefs.getInt('userID');
-    final url = Uri.parse('${AppConfig.baseUrl}/question/list?userID=$userID');
+    final url = Uri.parse('${AppConfig.baseUrl}/question/vote/list');
     try {
       final response = await http.get(url);
       if (response.statusCode == 200) {

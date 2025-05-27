@@ -71,13 +71,11 @@ class _GroupPostAddScreenState extends State<GroupPostAddScreen> {
       if (response.statusCode == 200 || response.statusCode == 201) {
         if (mounted) {
           Navigator.pop(context, {
-          'refresh': true,
-          'post': {
             'id': widget.existingPost?['id'],
             'subject': title,
             'content': content,
             'author': widget.existingPost?['author'],
-            'createDate': widget.existingPost?['createDate'],}
+            'createDate': widget.existingPost?['createDate'],
           });
         }
       } else {

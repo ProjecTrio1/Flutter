@@ -348,6 +348,7 @@ class _GroupPostDetailScreenState extends State<GroupPostDetailScreen> {
           if (currentUserEmail == postEmail)
             PopupMenuButton<String>(
               onSelected: (value) async {
+                print('넘겨주는 post: ${post}');
                 if (value == 'edit') {
                   final updated = await Navigator.push<Map<String, dynamic>>(
                     context,
@@ -414,45 +415,54 @@ class _GroupPostDetailScreenState extends State<GroupPostDetailScreen> {
           ...comments.map((comment) {
             final commentId = comment['id'];
             final isAuthor = comment['author']?['email'] == post['author']?['email'];
-            final alreadyLiked = comment['likedByMe'] ?? false;
             final displayName = isAuthor ? '익명 (작성자)' : '익명';
             final content = comment['content'] ?? '';
             final rawDate = comment['createDate']?.toString();
             final date = rawDate != null ? formatter.format(DateTime.parse(rawDate)) : '';
-            final likes = comment['likes'] ?? 0;
+            final voterList = comment['voter'] as List?;
+            final likes = voterList?.length ?? 0;
 
-            return ListTile(
-              title: Text(content),
-              subtitle: Text('$displayName | $date'),
-              trailing: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  IconButton(
-                    icon: Icon(
-                      alreadyLiked ? Icons.thumb_up : Icons.thumb_up_alt_outlined,
-                      color: alreadyLiked ? AppColors.primary : null,
-                      size: 18,
-                    ),
-                    onPressed: () => _voteComment(commentId),
+            return FutureBuilder<SharedPreferences>(
+              future: SharedPreferences.getInstance(),
+              builder: (context, snapshot) {
+                if (!snapshot.hasData) return SizedBox.shrink();
+                final userId = snapshot.data!.getInt('userID');
+                final hasVoted = voterList?.any((v) => v['id'] == userId) ?? false;
+
+                return ListTile(
+                  title: Text(content),
+                  subtitle: Text('$displayName | $date'),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        icon: Icon(
+                          hasVoted ? Icons.thumb_up : Icons.thumb_up_alt_outlined,
+                          size: 18,
+                          color: hasVoted ? AppColors.primary : null,
+                        ),
+                        onPressed: () => _voteComment(commentId),
+                      ),
+                      SizedBox(width: 0),
+                      Text('$likes'),
+                      if (comment['author'] == currentUserEmail)
+                        PopupMenuButton<String>(
+                          onSelected: (value) {
+                            if (value == 'edit') {
+                              _editComment(context, comment);
+                            } else if (value == 'delete') {
+                              _deleteComment(commentId);
+                            }
+                          },
+                          itemBuilder: (_) => [
+                            PopupMenuItem(value: 'edit', child: Text('수정')),
+                            PopupMenuItem(value: 'delete', child: Text('삭제')),
+                          ],
+                        ),
+                    ],
                   ),
-                  SizedBox(width: 0),
-                  Text('$likes'),
-                  if (comment['author'] == currentUserEmail)
-                    PopupMenuButton<String>(
-                      onSelected: (value) {
-                        if (value == 'edit') {
-                          _editComment(context, comment);
-                        } else if (value == 'delete') {
-                          _deleteComment(commentId);
-                        }
-                      },
-                      itemBuilder: (_) => [
-                        PopupMenuItem(value: 'edit', child: Text('수정')),
-                        PopupMenuItem(value: 'delete', child: Text('삭제')),
-                      ],
-                    ),
-                ],
-              ),
+                );
+              },
             );
           }),
         ],
