@@ -93,7 +93,7 @@ class _AIAnalysisHomePageState extends State<AIAnalysisHomePage>{
                     ...flaggedItems.map<Widget>((item) => Card(
                       child: ListTile(
                         title: Text("${item['content']?.isNotEmpty ==true ?item['content']: "내용 없음"} - ${item['amount'] ?? 0}원"),
-                        subtitle: Text("${item['date'] ?? "-"} /" "${item['isAnomaly'] == true ? '이상소비' : item['isOverspending'] == true ? '과소비' : ''}"),
+                        subtitle: Text("${item['date'] ?? "-"} / " "${item['anomaly'] == true ? '이상소비' : item['overspending'] == true ? '과소비' : ''}"),
                         trailing: Row(
                           mainAxisSize: MainAxisSize.min,
                         ),
