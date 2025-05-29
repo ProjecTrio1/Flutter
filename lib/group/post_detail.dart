@@ -31,10 +31,10 @@ class _GroupPostDetailScreenState extends State<GroupPostDetailScreen> {
     super.initState();
     post = Map.from(widget.post);
     likes = (post['voter'] as List?)?.length ?? 0;
-    _loadUserEmail().then((_) {
+    _loadUserEmail().then((_) async {
+      await _fetchPostDetail();
       _checkIfScrapped();
       _fetchComments();
-      _checkIfVoted();
     });
   }
 
@@ -153,7 +153,7 @@ class _GroupPostDetailScreenState extends State<GroupPostDetailScreen> {
 
         setState(() {
           likedPost = true;
-          likes = post['likes'] ?? likes + 1;
+          likes = post['likes'] ?? likes;
         });
       } else if (response.statusCode == 400) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -188,19 +188,8 @@ class _GroupPostDetailScreenState extends State<GroupPostDetailScreen> {
     try {
       final response = await http.get(url);
       if (response.statusCode == 200) {
-        setState(() {
-          likedCommentIndexes.add(commentId);
-          comments = comments.map((c) {
-            if (c['id'] == commentId) {
-              return {
-                ...c,
-                'likes': (c['likes'] ?? 0) + 1,
-                'likedByMe': true,
-              };
-            }
-            return c;
-          }).toList();
-        });
+        likedCommentIndexes.add(commentId);
+        await _fetchComments();
       } else if (response.statusCode == 400) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('이미 추천한 댓글입니다.')),
@@ -472,19 +461,27 @@ class _GroupPostDetailScreenState extends State<GroupPostDetailScreen> {
           }),
         ],
       ),
-      bottomNavigationBar: Padding(
-        padding: EdgeInsets.all(8),
-        child: TextField(
-          controller: _commentController,
-          decoration: InputDecoration(
-            hintText: '댓글 입력',
-            suffixIcon: IconButton(
-              icon: Icon(Icons.send),
-              onPressed: _submitComment,
+      bottomNavigationBar: SafeArea(
+        child: Padding(
+          padding: EdgeInsets.only(
+            left: 8,
+            right: 8,
+            bottom: MediaQuery.of(context).viewInsets.bottom + 8,
+          ),
+          child: TextField(
+            controller: _commentController,
+            decoration: InputDecoration(
+              hintText: '댓글 입력',
+              border: OutlineInputBorder(),
+              suffixIcon: IconButton(
+                icon: Icon(Icons.send),
+                onPressed: _submitComment,
+              ),
             ),
           ),
         ),
       ),
+
 
     );
   }
