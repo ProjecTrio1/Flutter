@@ -67,8 +67,10 @@ class _GroupScrapScreenState extends State<GroupScrapScreen> {
                   IconButton(
                     icon: Icon(Icons.bookmark_remove),
                     onPressed: () async {
+                      final prefs = await SharedPreferences.getInstance();
+                      final userID = prefs.getInt('userID');
                       final postId = post['id'];
-                      final url = Uri.parse('${AppConfig.baseUrl}/question/scrap/$postId');
+                      final url = Uri.parse('${AppConfig.baseUrl}/question/scrap/$postId?userID=$userID');
                       try {
                         final response = await http.post(url);
                         if (response.statusCode == 200) {

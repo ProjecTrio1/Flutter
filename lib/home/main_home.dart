@@ -22,6 +22,7 @@ class _MenuHomeScreenState extends State<MenuHomeScreen> {
   int totalExpense = 0;
   int plannedIncome = 0;
   int plannedExpense = 0;
+  int totalAsset = 0;
 
   List<Map<String, dynamic>> _top3Expenses = [];
 
@@ -54,6 +55,8 @@ class _MenuHomeScreenState extends State<MenuHomeScreen> {
 
     if (response.statusCode == 200) {
       final notes = jsonDecode(utf8.decode(response.bodyBytes));
+      int cumulativeIncome = 0;
+      int cumulativeExpense = 0;
       int income = 0;
       int expense = 0;
       List<Map<String, dynamic>> expensesOnly = [];
@@ -64,6 +67,15 @@ class _MenuHomeScreenState extends State<MenuHomeScreen> {
           final amount = int.tryParse(note['amount'].toString()) ?? 0;
           final isIncome = note['isIncome'] == true;
 
+          if (date.year < selectedYear || (date.year == selectedYear && date.month <= selectedMonth)) {
+            if (isIncome) {
+            cumulativeIncome += amount;
+          } else {
+            cumulativeExpense += amount;
+          }
+        }
+
+        if (date.year == selectedYear && date.month == selectedMonth) {
           if (isIncome) {
             income += amount;
           } else {
@@ -80,9 +92,12 @@ class _MenuHomeScreenState extends State<MenuHomeScreen> {
         totalIncome = income;
         totalExpense = expense;
         _top3Expenses = top3;
+
+        totalAsset = cumulativeIncome - cumulativeExpense + income - expense;
       });
     }
   }
+}
 
   void _showMonthSelector() async {
     int tempYear = selectedYear;
@@ -223,7 +238,7 @@ class _MenuHomeScreenState extends State<MenuHomeScreen> {
                 Align(
                   alignment: Alignment.centerRight,
                   child: Text(
-                    '${_formatCurrency(totalIncome - totalExpense)}원',
+                    '${_formatCurrency(totalAsset)}원',
                     style: AppTextStyles.bold.copyWith(fontSize: 28),
                   ),
                 ),
