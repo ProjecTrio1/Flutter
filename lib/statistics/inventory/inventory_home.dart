@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import '../../style/main_style.dart';
-import 'inventory_add_item.dart';
-import 'inventory_item_tile.dart';
+import '../../style/inventory_style.dart';
+import 'inventory_add_cart.dart';
+import 'inventory_add_manual.dart';
 import 'inventory_view.dart';
 import 'inventory_storage.dart';
+import 'inventory_detail_view.dart';
+import 'ai_recommendation/ai_recipe_recommendation.dart';
 
 class InventoryHomePage extends StatefulWidget {
   const InventoryHomePage({super.key});
@@ -13,19 +16,15 @@ class InventoryHomePage extends StatefulWidget {
 }
 
 class _InventoryHomePageState extends State<InventoryHomePage> {
-  String selectedCategory = '의류';
-  final List<String> categories = ['의류', '식품', '뷰티'];
+  final List<String> categories = ['식품', '의류'];
+  int selectedTabIndex = 0;
+  String selectedCategory = '식품';
+  bool sortLatestFirst = true;
 
-  final List<String> periods = ['전체', '월간'];
-  int periodIndex = 0;
+  List<Map<String, dynamic>> allItems = [];
 
-  bool isGridView = true;
-  bool isSelectionMode = false;
-  Set<int> selectedIndexes = {};
-
-  List<Map<String, String>> items = [];
-
-  String get currentPeriod => periods[periodIndex];
+  bool get isCartView => selectedTabIndex == 0;
+  bool get isIngredientView => selectedTabIndex == 1;
 
   @override
   void initState() {
@@ -34,172 +33,154 @@ class _InventoryHomePageState extends State<InventoryHomePage> {
   }
 
   Future<void> _loadItems() async {
-    items = await InventoryStorage.loadItems();
-    setState(() {});
+    final loaded = await InventoryStorage.loadItems();
+    setState(() => allItems = loaded);
   }
 
-  Future<void> _saveItems() async {
-    await InventoryStorage.saveItems(items);
-  }
-
-  void _nextPeriod() => setState(() => periodIndex = (periodIndex + 1) % periods.length);
-
-  void _toggleViewMode() => setState(() => isGridView = !isGridView);
-
-  void _toggleSelectionMode() {
-    setState(() {
-      isSelectionMode = !isSelectionMode;
-      selectedIndexes.clear();
-    });
-  }
-
-  void _toggleItemSelection(int index) {
-    setState(() {
-      if (selectedIndexes.contains(index)) {
-        selectedIndexes.remove(index);
-      } else {
-        selectedIndexes.add(index);
-      }
-    });
-  }
-
-  void _deleteSelectedItems() async {
-    if (selectedIndexes.isEmpty) {
-      setState(() => isSelectionMode = false);
-      return;
-    }
-
-    final confirm = await showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: Text('삭제 확인'),
-        content: Text('선택한 항목을 삭제하시겠습니까?'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: Text('취소')),
-          TextButton(onPressed: () => Navigator.pop(context, true), child: Text('삭제')),
-        ],
-      ),
+  Future<void> _navigateToAddCart() async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const InventoryAddCartPage()),
     );
-    if (confirm == true) {
-      setState(() {
-        items = items.asMap().entries.where((e) => !selectedIndexes.contains(e.key)).map((e) => e.value).toList();
-        selectedIndexes.clear();
-        isSelectionMode = false;
-      });
-      _saveItems();
+    if (result != null && result is Map<String, dynamic>) {
+      setState(() => allItems.add(result));
+      await InventoryStorage.saveItems(allItems);
     }
   }
 
-  void _navigateToAdd([Map<String, String>? data, int? index]) async {
+  Future<void> _navigateToAddManual([Map<String, dynamic>? item, int? index]) async {
     final result = await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => InventoryAddItemPage(
-          isEdit: data != null,
-          initialData: data,
-        ),
+        builder: (_) => InventoryAddManualPage(initialData: item),
       ),
     );
-    if (result != null && result is Map<String, String>) {
+    if (result != null && result is Map<String, dynamic>) {
       setState(() {
-        if (index != null) items[index] = result;
-        else items.add(result);
+        if (index != null) allItems[index] = result;
+        else allItems.add(result);
       });
-      _saveItems();
+      await InventoryStorage.saveItems(allItems);
     }
   }
 
-  List<Map<String, String>> get _filteredItems {
-    if (currentPeriod == '월간') {
-      final now = DateTime.now();
-      return items.where((item) {
-        final dateStr = item['date'];
-        if (dateStr == null || dateStr.isEmpty) return false;
-        final date = DateTime.tryParse(dateStr);
-        if (date == null) return false;
-        return date.year == now.year && date.month == now.month;
-      }).toList();
+  List<Map<String, dynamic>> get _filteredItems {
+    final now = DateTime.now();
+    final filtered = allItems.where((item) => item['category'] == selectedCategory).toList();
+    filtered.sort((a, b) {
+      final key = isIngredientView ? 'expirationDate' : 'date';
+      final da = DateTime.tryParse(a[key] ?? '') ?? DateTime.now();
+      final db = DateTime.tryParse(b[key] ?? '') ?? DateTime.now();
+      return sortLatestFirst ? db.compareTo(da) : da.compareTo(db);
+    });
+    return filtered;
+  }
+
+  List<Map<String, dynamic>> get cartItems => _filteredItems.where((e) => e['imagePath'] != null).toList();
+  List<Map<String, dynamic>> get ingredientItems => _filteredItems.where((e) => e['imagePath'] == null).toList();
+
+  void _onTapItem(Map<String, dynamic> item, int index) {
+    if (isIngredientView) {
+      _navigateToAddManual(item, index);
+    } else {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => InventoryDetailView(item: item)),
+      );
     }
-    return items;
   }
 
   @override
   Widget build(BuildContext context) {
+    final showItems = isCartView ? cartItems : ingredientItems;
+
     return Scaffold(
+      backgroundColor: AppColors.surface,
       appBar: AppBar(
-        title: Text('모아보기'),
+        title: const Text('모아보기'),
         actions: [
-          if (isSelectionMode) ...[
+          if (selectedCategory == '식품') ...[
             IconButton(
-              icon: Icon(Icons.select_all),
-              tooltip: '전체 선택',
+              icon: const Icon(Icons.auto_awesome),
+              tooltip: 'AI 레시피 추천',
               onPressed: () {
-                setState(() {
-                  selectedIndexes = Set.from(List.generate(_filteredItems.length, (i) => i));
-                });
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const AIRecipeRecommendationPage()),
+                );
               },
             ),
             IconButton(
-              icon: Icon(Icons.delete),
-              tooltip: '삭제',
-              onPressed: _deleteSelectedItems,
+              icon: const Icon(Icons.add),
+              onPressed: _navigateToAddCart,
             ),
-          ]
-          else ...[
-            IconButton(icon: Icon(Icons.delete_outline), onPressed: _toggleSelectionMode),
-            IconButton(icon: Icon(Icons.add), onPressed: () => _navigateToAdd()),
-          ]
+          ],
         ],
       ),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
                 Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.only(right: 12),
-                    child: DropdownButtonFormField<String>(
-                      value: selectedCategory,
-                      decoration: const InputDecoration(
-                        contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                        isDense: true,
-                        border: OutlineInputBorder(),
-                      ),
-                      items: categories.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
-                      onChanged: (val) => setState(() => selectedCategory = val!),
+                  child: DropdownButtonFormField<String>(
+                    value: selectedCategory,
+                    decoration: const InputDecoration(
+                      contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      isDense: true,
+                      border: OutlineInputBorder(),
                     ),
+                    items: categories.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
+                    onChanged: (val) => setState(() => selectedCategory = val!),
                   ),
                 ),
-                Row(
-                  children: [
-                    OutlinedButton(onPressed: _nextPeriod, child: Text(currentPeriod)),
-                    const SizedBox(width: 8),
-                    ToggleButtons(
-                      isSelected: [isGridView, !isGridView],
-                      onPressed: (_) => _toggleViewMode(),
-                      children: const [
-                        Icon(Icons.grid_view),
-                        Icon(Icons.view_list),
-                      ],
-                    ),
+                const SizedBox(width: 12),
+                ToggleButtons(
+                  isSelected: [isCartView, isIngredientView],
+                  onPressed: (index) => setState(() => selectedTabIndex = index),
+                  children: const [
+                    Icon(Icons.shopping_cart_outlined),
+                    Icon(Icons.list_alt_outlined),
                   ],
+                ),
+                const SizedBox(width: 12),
+                IconButton(
+                  icon: Icon(sortLatestFirst ? Icons.arrow_downward : Icons.arrow_upward),
+                  tooltip: sortLatestFirst ? '최신순' : '오래된순',
+                  onPressed: () => setState(() => sortLatestFirst = !sortLatestFirst),
                 ),
               ],
             ),
             const SizedBox(height: 12),
-            Expanded(
-              child: InventoryView(
-                items: _filteredItems,
-                isGridView: isGridView,
-                isSelectionMode: isSelectionMode,
-                selectedIndexes: selectedIndexes,
-                onTapItem: _toggleItemSelection,
-                onOpenEdit: _navigateToAdd,
+
+            if (selectedCategory == '의류')
+              const Expanded(
+                child: Center(
+                  child: Text('의류 항목은 추후 업데이트 예정입니다.', style: AppTextStyles.body),
+                ),
+              )
+            else ...[
+              if (isIngredientView)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: OutlinedButton.icon(
+                    onPressed: () => _navigateToAddManual(),
+                    icon: const Icon(Icons.add),
+                    label: const Text("재료 수동 추가"),
+                    style: InventoryDecorations.outlinedIconButton,
+                  ),
+                ),
+              Expanded(
+                child: showItems.isEmpty
+                    ? const Center(child: Text('저장된 내역이 없습니다.', style: AppTextStyles.body))
+                    : InventoryView(
+                  items: showItems,
+                  isCartView: isCartView,
+                  onTap: _onTapItem,
+                ),
               ),
-            )
+            ],
           ],
         ),
       ),

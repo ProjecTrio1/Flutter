@@ -2,18 +2,18 @@ import 'package:flutter/material.dart';
 
 class StatisticColors {
   static const colorPalette = [
-  Color(0xFFCD5F5F),
-  Color(0xFF36668A),
-  Color(0xFF297327),
-  Color(0xFF7A3C87),
-  Color(0xFF7A552D),
-  Color(0xFFFFD92F),
-  Color(0xFFA65628),
-  Color(0xFFF781BF),
-  Color(0xFF999999),
-  Color(0xFF66C2A5),
-  Color(0xFFFC8D62),
-  Color(0xFF8DA0CB)
+  Color(0xFFFF0000),
+  Color(0xFFFFA166),
+  Color(0xFFFFEF60),
+  Color(0xFFC5FF5E),
+  Color(0xFF459C52),
+  Color(0xFF98CDFF),
+  Color(0xFF54AFFF),
+  Color(0xFF335CFF),
+  Color(0xFF796CFF),
+  Color(0xFF822FFF),
+  Color(0xFFF56CFF),
+  Color(0xFFA8A8A8)
   ];
 
   static const pieTitle = TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white);
@@ -49,4 +49,5 @@ class StatisticStyles {
     border: Border.all(color: Colors.orange, width: 1.5),
     borderRadius: BorderRadius.circular(8),
   );
+
 }
