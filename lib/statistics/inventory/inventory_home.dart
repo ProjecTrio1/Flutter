@@ -1,6 +1,6 @@
 import 'dart:convert';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../style/main_style.dart';
 import '../../style/inventory_style.dart';
@@ -29,6 +29,8 @@ class _InventoryHomePageState extends State<InventoryHomePage> {
   bool sortLatestFirst = true;
 
   List<Map<String, dynamic>> allItems = [];
+  Set<int> _selectedIngredientIndexes = {};
+  bool _selectAll = false;
 
   bool get isCartView => selectedTabIndex == 0;
   bool get isIngredientView => selectedTabIndex == 1;
@@ -55,28 +57,42 @@ class _InventoryHomePageState extends State<InventoryHomePage> {
     }
   }
 
-  Future<void> _startCooking() async {
-    final prefs = await SharedPreferences.getInstance();
-    final jsonStr = prefs.getString('inventory_items');
-    if (jsonStr == null || jsonStr.isEmpty) return;
-
-    final decoded = jsonDecode(jsonStr) as List;
-    final items = decoded.map((e) => Map<String, dynamic>.from(e)).toList();
-
-    final allIngredients = <String>{};
-    for (final item in items) {
-      if (item['category'] == '식품') {
-        final parsedList = item['parsedItems'] as List<dynamic>? ?? [];
-        for (final parsed in parsedList) {
-          final ingredient = parsed is Map<String, dynamic> ? parsed['name'] : parsed.toString();
-          allIngredients.add(ingredient);
-        }
-      }
+  Future<void> _navigateToAddManual([Map<String, dynamic>? item, int? index]) async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => InventoryAddManualPage(initialData: item),
+      ),
+    );
+    if (result != null && result is Map<String, dynamic>) {
+      setState(() {
+        if (index != null) allItems[index] = result;
+        else allItems.add(result);
+      });
+      await InventoryStorage.saveItems(allItems);
     }
+  }
 
-    if (allIngredients.isEmpty) {
+  Future<void> _startCookingWithSelected() async {
+    // 디버깅용
+    print('ingredientItems: $ingredientItems');
+    print('selected indexes: $_selectedIngredientIndexes');
+
+    final selectedIngredients = _selectedIngredientIndexes
+        .map((i) {
+      final item = ingredientItems[i];
+      // name 키 없으면 title 키로 대체
+      return (item['name'] ?? item['title'] ?? '').toString().trim();
+    })
+        .where((name) => name.isNotEmpty)
+        .toSet()
+        .toList();
+
+    print('전송할 재료: $selectedIngredients');
+
+    if (selectedIngredients.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('저장된 식품 재료가 없습니다.')),
+        const SnackBar(content: Text('선택된 재료가 없습니다.')),
       );
       return;
     }
@@ -96,11 +112,11 @@ class _InventoryHomePageState extends State<InventoryHomePage> {
     );
 
     try {
-      final result = await AIRecipeAPI.requestRecipe(allIngredients.toList());
+      final result = await AIRecipeAPI.requestRecipe(selectedIngredients.join(', '));
       final parsed = result['parsed'];
 
       if (context.mounted) {
-        Navigator.pop(context); // 로딩 닫기
+        Navigator.pop(context);
         Navigator.push(
           context,
           MaterialPageRoute(
@@ -118,24 +134,7 @@ class _InventoryHomePageState extends State<InventoryHomePage> {
     }
   }
 
-  Future<void> _navigateToAddManual([Map<String, dynamic>? item, int? index]) async {
-    final result = await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => InventoryAddManualPage(initialData: item),
-      ),
-    );
-    if (result != null && result is Map<String, dynamic>) {
-      setState(() {
-        if (index != null) allItems[index] = result;
-        else allItems.add(result);
-      });
-      await InventoryStorage.saveItems(allItems);
-    }
-  }
-
   List<Map<String, dynamic>> get _filteredItems {
-    final now = DateTime.now();
     final filtered = allItems.where((item) => item['category'] == selectedCategory).toList();
     filtered.sort((a, b) {
       final key = isIngredientView ? 'expirationDate' : 'date';
@@ -186,7 +185,6 @@ class _InventoryHomePageState extends State<InventoryHomePage> {
     );
   }
 
-
   @override
   Widget build(BuildContext context) {
     final showItems = isCartView ? cartItems : ingredientItems;
@@ -197,11 +195,6 @@ class _InventoryHomePageState extends State<InventoryHomePage> {
         title: const Text('모아보기'),
         actions: [
           if (selectedCategory == '식품') ...[
-            IconButton(
-              icon: const Icon(Icons.restaurant_menu),
-              tooltip: 'AI 레시피 추천',
-              onPressed: _startCooking,
-            ),
             IconButton(
               icon: const Icon(Icons.bookmark_outline),
               tooltip: '레시피 북마크',
@@ -264,14 +257,35 @@ class _InventoryHomePageState extends State<InventoryHomePage> {
               )
             else ...[
               if (isIngredientView)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: OutlinedButton.icon(
-                    onPressed: () => _navigateToAddManual(),
-                    icon: const Icon(Icons.add),
-                    label: const Text("재료 수동 추가"),
-                    style: InventoryDecorations.outlinedIconButton,
-                  ),
+                Row(
+                  children: [
+                    IconButton(
+                      icon: Icon(_selectAll ? Icons.check_box : Icons.check_box_outline_blank),
+                      tooltip: _selectAll ? '전체 해제' : '전체 선택',
+                      onPressed: () {
+                        setState(() {
+                          _selectAll = !_selectAll;
+                          if (_selectAll) {
+                            _selectedIngredientIndexes = Set<int>.from(ingredientItems.asMap().keys);
+                          } else {
+                            _selectedIngredientIndexes.clear();
+                          }
+                        });
+                      },
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.restaurant_menu),
+                      tooltip: '선택 재료로 레시피 추천',
+                      onPressed: _selectedIngredientIndexes.isEmpty ? null : _startCookingWithSelected,
+                    ),
+                    const Spacer(),
+                    OutlinedButton.icon(
+                      onPressed: _navigateToAddManual,
+                      icon: const Icon(Icons.add),
+                      label: const Text("재료 수동 추가"),
+                      style: InventoryDecorations.outlinedIconButton,
+                    ),
+                  ],
                 ),
               Expanded(
                 child: showItems.isEmpty
@@ -281,6 +295,16 @@ class _InventoryHomePageState extends State<InventoryHomePage> {
                   isCartView: isCartView,
                   onTap: _onTapItem,
                   onDelete: _confirmDelete,
+                  selectedIndexes: _selectedIngredientIndexes,
+                  onSelect: (int index, bool selected) {
+                    setState(() {
+                      if (selected) {
+                        _selectedIngredientIndexes.add(index);
+                      } else {
+                        _selectedIngredientIndexes.remove(index);
+                      }
+                    });
+                  },
                 ),
               ),
             ],

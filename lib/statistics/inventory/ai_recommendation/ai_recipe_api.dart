@@ -4,13 +4,12 @@ import 'package:http/http.dart' as http;
 import '../../../config.dart';
 
 class AIRecipeAPI {
-  static Future<Map<String, dynamic>> requestRecipe(List<String> ingredients) async {
-    final uri = Uri.parse('${AppConfig.flaskUrl}/generate-recipe'); // Flask 서버
-
+  static Future<Map<String, dynamic>> requestRecipe(String ingredientsKor) async {
+    final uri = Uri.parse('${AppConfig.flaskUrl}/generate-recipe');
     final response = await http.post(
       uri,
       headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'ingredients': ingredients.join(', ')}),
+      body: jsonEncode({'ingredients': ingredientsKor}),
     );
 
     if (response.statusCode == 200) {

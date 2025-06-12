@@ -2,7 +2,6 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import '../../style/main_style.dart';
 import '../../style/inventory_style.dart';
-import 'inventory_home.dart';
 
 class InventoryView extends StatelessWidget {
   final List<Map<String, dynamic>> items;
@@ -10,12 +9,17 @@ class InventoryView extends StatelessWidget {
   final void Function(Map<String, dynamic> item, int index) onTap;
   final void Function(int index) onDelete;
 
+  final Set<int>? selectedIndexes;
+  final void Function(int index, bool selected)? onSelect;
+
   const InventoryView({
     super.key,
     required this.items,
     required this.isCartView,
     required this.onTap,
     required this.onDelete,
+    this.selectedIndexes,
+    this.onSelect,
   });
 
   List<Map<String, dynamic>> normalizeParsedItems(dynamic data) {
@@ -87,7 +91,10 @@ class InventoryView extends StatelessWidget {
         displayTitle,
         style: AppTextStyles.body.copyWith(fontSize: 16, fontWeight: FontWeight.bold),
       ),
-      subtitle: Text('$price원 / $date', style: AppTextStyles.body.copyWith(color: AppColors.textSecondary)),
+      subtitle: Text(
+        '$price원 / $date',
+        style: AppTextStyles.body.copyWith(color: AppColors.textSecondary),
+      ),
       trailing: const Icon(Icons.chevron_right),
     );
   }
@@ -96,7 +103,6 @@ class InventoryView extends StatelessWidget {
     final title = (item['title'] ?? '').toString().trim();
     final expiration = (item['expirationDate'] ?? '').toString().trim();
     final parsed = normalizeParsedItems(item['parsedItems']);
-
     final amount = parsed.isNotEmpty ? (parsed[0]['amount'] ?? '') : '';
 
     final detailText = [
@@ -104,17 +110,28 @@ class InventoryView extends StatelessWidget {
       if (expiration.isNotEmpty) '소비기한: $expiration',
     ].join(' / ');
 
+    final bool isSelected = selectedIndexes?.contains(index) ?? false;
+
     return ListTile(
       onTap: () => onTap(item, index),
       onLongPress: () => onDelete(index),
+      leading: onSelect != null
+          ? Checkbox(
+        value: isSelected,
+        onChanged: (value) => onSelect!(index, value ?? false),
+      )
+          : null,
       title: Text(
         title,
         style: AppTextStyles.body.copyWith(fontSize: 16, fontWeight: FontWeight.bold),
       ),
       subtitle: detailText.isNotEmpty
-          ? Text(detailText, style: AppTextStyles.body.copyWith(color: AppColors.textSecondary))
+          ? Text(
+        detailText,
+        style: AppTextStyles.body.copyWith(color: AppColors.textSecondary),
+      )
           : null,
+      trailing: const Icon(Icons.chevron_right),
     );
   }
-
 }
