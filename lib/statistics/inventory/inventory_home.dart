@@ -282,7 +282,7 @@ class _InventoryHomePageState extends State<InventoryHomePage> {
                     OutlinedButton.icon(
                       onPressed: _navigateToAddManual,
                       icon: const Icon(Icons.add),
-                      label: const Text("재료 수동 추가"),
+                      label: const Text("식재료 수동 추가"),
                       style: InventoryDecorations.outlinedIconButton,
                     ),
                   ],
