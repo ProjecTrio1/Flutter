@@ -42,7 +42,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     final userID = prefs.getInt('userID');
     if (userID == null) return;
 
-    final url = Uri.parse('${AppConfig.baseUrl}/note/user/profile/$userID');
+    final url = Uri.parse('${AppConfig.baseUrl}/user/profile/$userID');
     final response = await http.get(url);
 
     if (response.statusCode == 200) {
@@ -56,6 +56,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     } else {
       _showDialog('사용자 정보 불러오기 실패: ${response.body}');
     }
+    print("userID: $userID");
+    print("요청 URL: ${url.toString()}");
+    print("status: ${response.statusCode}");
+    print("body: ${response.body}");
   }
 
   void _submitUpdate() async {

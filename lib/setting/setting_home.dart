@@ -19,15 +19,15 @@ class SettingHomeScreen extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          _buildSettingTile(
-            context,
-            icon: Icons.person,
-            title: '회원 정보 수정',
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => EditProfileScreen()),
-            ),
-          ),
+          // _buildSettingTile(
+          //   context,
+          //   icon: Icons.person,
+          //   title: '회원 정보 수정',
+          //   onTap: () => Navigator.push(
+          //     context,
+          //     MaterialPageRoute(builder: (_) => EditProfileScreen()),
+          //   ),
+          // ),
           _buildSettingTile(
             context,
             icon: Icons.category,
