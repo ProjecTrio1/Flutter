@@ -67,7 +67,7 @@ class _AIRecipeResultPageState extends State<AIRecipeResultPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.surface,
+      backgroundColor: Colors.white,
       appBar: AppBar(
         title: Text(title.isNotEmpty ? title : '레시피 결과'),
         actions: [

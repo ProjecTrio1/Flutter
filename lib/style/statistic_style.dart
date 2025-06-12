@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 class StatisticColors {
   static const colorPalette = [
-  Color(0xFFFF0000),
+  Color(0xFFFF5A5F),
   Color(0xFFFFA166),
   Color(0xFFFFEF60),
   Color(0xFFC5FF5E),

@@ -19,32 +19,36 @@ class _LoginHomeState extends State<LoginHome> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
-  void _submitForm() async{
-    // final name = _nameController.text;
+  void _submitForm() async {
     final email = _emailController.text;
     final password = _passwordController.text;
-    /* 서버 테스트*/
-    final url = Uri.parse('${AppConfig.baseUrl}/user/login'); // Android 에뮬레이터 기준 IP
-    final response = await http.post(
-      url,
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        // 'username' :name,
-        'email' : email,
-        'password' : password,
-      }),
-    );
-    String message = '로그인 실패';
+
+    final url = Uri.parse('${AppConfig.baseUrl}/user/login');
+    print('📡 요청 URL: $url');
+
     try {
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'email': email,
+          'password': password,
+        }),
+      );
+
+      print('📨 응답 상태코드: ${response.statusCode}');
+      print('📨 응답 바디: ${response.body}');
+
       final rBody = utf8.decode(response.bodyBytes);
       final decoded = jsonDecode(rBody);
-      message = decoded is Map && decoded.containsKey('message')
+      String message = decoded is Map && decoded.containsKey('message')
           ? decoded['message']
           : rBody;
+
       if (response.statusCode == 200 && decoded['user'] != null) {
         final user = decoded['user'];
         final userID = user['id'];
-        print("userID: $userID");
+        print("✅ 로그인 성공 - userID: $userID");
 
         final share = await SharedPreferences.getInstance();
         await share.setInt('userID', userID);
@@ -55,14 +59,17 @@ class _LoginHomeState extends State<LoginHome> {
           MaterialPageRoute(builder: (context) => Navigation()),
         );
         return;
+      } else {
+        print("❌ 로그인 실패 상태코드: ${response.statusCode}");
+        _showDialog(message);
       }
     } catch (e) {
-      message = '서버 응답 파싱 오류';
+      print('❌ 예외 발생: $e');
+      _showDialog('서버 응답 오류 또는 연결 실패');
     }
-    _showDialog(message);
+  }
 
-
-     /* 서버 없이 테스트
+/* 서버 없이 테스트
 
     final testUserID = 1; // 테스트용 ID
     final share = await SharedPreferences.getInstance();
@@ -73,7 +80,7 @@ class _LoginHomeState extends State<LoginHome> {
       MaterialPageRoute(builder: (context) => Navigation()),
     );
 */
-  }
+
   void _showDialog(String message) {
     showDialog(
       context: context,

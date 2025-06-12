@@ -60,7 +60,7 @@ class _GroupHomeScreenState extends State<GroupHomeScreen> {
       appBar: AppBar(
         title: Row(
           children: [
-            Text(' '),
+            Text('커뮤니티'),
             SizedBox(width: 8),
           ],
         ),
@@ -89,65 +89,74 @@ class _GroupHomeScreenState extends State<GroupHomeScreen> {
       ),
       body: isLoading
           ? Center(child: CircularProgressIndicator())
-          : posts.isEmpty
-          ? Center(child: Text('등록된 글이 없습니다.'))
-          : ListView.builder(
-        itemCount: posts.length,
-        itemBuilder: (context, index) {
-          final post = posts[index];
-          final authorText = post['anonymous'] == true
-              ? '익명'
-              : post['author']['username'] ?? '알 수 없음';
-          final dateStr = post['createDate']?.substring(0, 10) ?? '날짜 없음';
+          : RefreshIndicator(
+        onRefresh: _fetchPosts,
+        child: posts.isEmpty
+            ? SingleChildScrollView(
+          physics: AlwaysScrollableScrollPhysics(),
+          child: SizedBox(
+            height: MediaQuery.of(context).size.height * 0.6,
+            child: Center(child: Text('등록된 글이 없습니다.')),
+          ),
+        )
+            : ListView.builder(
+          itemCount: posts.length,
+          itemBuilder: (context, index) {
+            final post = posts[index];
+            final authorText = post['anonymous'] == true
+                ? '익명'
+                : post['author']['username'] ?? '알 수 없음';
+            final dateStr = post['createDate']?.substring(0, 10) ?? '날짜 없음';
 
-          return Card(
-            margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: ListTile(
-              title: Text(post['subject'] ?? '제목 없음'),
-              subtitle: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    post['content'] ?? '',
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  SizedBox(height: 4),
-                  Text(
-                    '$dateStr',
-                    style: TextStyle(fontSize: 12, color: Colors.grey),
-                  ),
-                ],
+            return Card(
+              margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: ListTile(
+                title: Text(post['subject'] ?? '제목 없음'),
+                subtitle: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      post['content'] ?? '',
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    SizedBox(height: 4),
+                    Text(
+                      '$dateStr',
+                      style: TextStyle(fontSize: 12, color: Colors.grey),
+                    ),
+                  ],
+                ),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.thumb_up_alt_outlined, size: 16),
+                    SizedBox(width: 4),
+                    Text('${(post['voter'] as List?)?.length ?? 0}'),
+                    SizedBox(width: 8),
+                    Icon(Icons.comment, size: 16),
+                    SizedBox(width: 4),
+                    Text('${(post['answerList'] as List?)?.length ?? 0}'),
+                  ],
+                ),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => GroupPostDetailScreen(post: post),
+                    ),
+                  );
+                },
               ),
-              trailing: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.thumb_up_alt_outlined, size: 16),
-                  SizedBox(width: 4),
-                  Text('${(post['voter'] as List?)?.length ?? 0}'),
-                  SizedBox(width: 8),
-                  Icon(Icons.comment, size: 16),
-                  SizedBox(width: 4),
-                  Text('${(post['answerList'] as List?)?.length ?? 0}'),
-                ],
-              ),
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => GroupPostDetailScreen(post: post),
-                  ),
-                );
-              },
-            ),
-          );
-        },
+            );
+          },
+        ),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () async {
           final result = await Navigator.pushNamed(context, '/group/add');
           if (result != null) {
-            await _fetchPosts();
+            await _fetchPosts(); // 글 작성 후 갱신
           }
         },
         child: Icon(Icons.create),

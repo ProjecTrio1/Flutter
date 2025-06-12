@@ -55,26 +55,26 @@ class _MenuHomeScreenState extends State<MenuHomeScreen> {
 
     if (response.statusCode == 200) {
       final notes = jsonDecode(utf8.decode(response.bodyBytes));
-      int cumulativeIncome = 0;
-      int cumulativeExpense = 0;
+
+      int totalIncomeSum = 0;
+      int totalExpenseSum = 0;
       int income = 0;
       int expense = 0;
       List<Map<String, dynamic>> expensesOnly = [];
 
       for (var note in notes) {
         final date = DateTime.parse(note['createdAt']).toLocal();
-        if (date.year == selectedYear && date.month == selectedMonth) {
-          final amount = int.tryParse(note['amount'].toString()) ?? 0;
-          final isIncome = note['isIncome'] == true;
+        final amount = int.tryParse(note['amount'].toString()) ?? 0;
+        final isIncome = note['isIncome'] == true;
 
-          if (date.year < selectedYear || (date.year == selectedYear && date.month <= selectedMonth)) {
-            if (isIncome) {
-            cumulativeIncome += amount;
-          } else {
-            cumulativeExpense += amount;
-          }
+        // 전체 자산 계산용
+        if (isIncome) {
+          totalIncomeSum += amount;
+        } else {
+          totalExpenseSum += amount;
         }
 
+        // 이번 달 수입/지출과 top3
         if (date.year == selectedYear && date.month == selectedMonth) {
           if (isIncome) {
             income += amount;
@@ -93,11 +93,10 @@ class _MenuHomeScreenState extends State<MenuHomeScreen> {
         totalExpense = expense;
         _top3Expenses = top3;
 
-        totalAsset = cumulativeIncome - cumulativeExpense + income - expense;
+        totalAsset = totalIncomeSum - totalExpenseSum; // 현재 자산
       });
     }
   }
-}
 
   void _showMonthSelector() async {
     int tempYear = selectedYear;
@@ -232,7 +231,7 @@ class _MenuHomeScreenState extends State<MenuHomeScreen> {
               children: [
                 Align(
                   alignment: Alignment.centerRight,
-                  child: Text('자산', style: AppTextStyles.title.copyWith(fontSize: 18)),
+                  child: Text('현재 자산', style: AppTextStyles.title.copyWith(fontSize: 18)),
                 ),
                 SizedBox(height: 4),
                 Align(

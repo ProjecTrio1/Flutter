@@ -47,9 +47,13 @@ class _NoteListWidgetState extends State<NoteListWidget> {
     final sortedDates = widget.groupedNotes.keys.toList()
       ..sort((a, b) => b.compareTo(a));
 
-    return ListView(
-      children: [
-        ...sortedDates.map((date) {
+    return RefreshIndicator(
+        onRefresh: () async {
+      widget.onDataChanged();
+    },
+    child: ListView(
+    children: [
+    ...sortedDates.map((date) {
           final notes = widget.groupedNotes[date]!;
           final weekdayStr = DateFormat('M월 d일 (E)', 'ko_KR').format(date);
           final net = notes.fold<int>(0, (sum, e) {
@@ -194,8 +198,9 @@ class _NoteListWidgetState extends State<NoteListWidget> {
               }).toList(),
             ],
           );
-        }).toList(),
-      ],
+    }).toList(),
+    ],
+    ),
     );
   }
 }

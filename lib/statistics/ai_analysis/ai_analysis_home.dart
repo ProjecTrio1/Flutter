@@ -66,47 +66,51 @@ class _AIAnalysisHomePageState extends State<AIAnalysisHomePage>{
 
     return Scaffold(
       appBar: AppBar(title: Text('AI 분석')),
-      body: ListView(
-        padding: EdgeInsets.all(16),
-        children: [
-          Text("${report!['month']} 리포트"),
-          SizedBox(height: 10),
-          Text("총 지출 : ${report!['totalAmount']}원"),
-          Text("이상 소비 : ${report!['anomalyCount']}건, 과소비 : ${report!['overspendingCount']}건"),
-          SizedBox(height: 20),
-          Text("소비 분석 리포트",),
-          ...suggestions.map((s) => Padding(padding: EdgeInsets.symmetric(vertical: 4),child: Text("📍 $s"))),
-          SizedBox(height: 20),
-          Text("카테고리별 통계"),
-          ...byCategory.map<Widget>((cat) {
-            final flaggedItems = cat['flaggedItems']??[];
-            return  Card(
-              margin: EdgeInsets.symmetric(vertical: 8),
-              child: Padding(
-                padding: EdgeInsets.all(12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(cat['category'] ?? "카테고리 없음"),
-                    Text("총 지출 : ${cat['totalAmount']}원 | 이상소비: ${cat['anomalyCount']}건 | 과소비: ${cat['overspendingCount']}건"),
-                    SizedBox(height: 8),
-                    ...flaggedItems.map<Widget>((item) => Card(
-                      child: ListTile(
-                        title: Text("${item['content']?.isNotEmpty ==true ?item['content']: "내용 없음"} - ${item['amount'] ?? 0}원"),
-                        subtitle: Text("${item['date'] ?? "-"} / " "${item['anomaly'] == true ? '이상소비' : item['overspending'] == true ? '과소비' : ''}"),
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
+      body: SafeArea(
+        child: ListView(
+          padding: EdgeInsets.all(16),
+          children: [
+            Text("${report!['month']} 리포트"),
+            SizedBox(height: 10),
+            Text("총 지출 : ${report!['totalAmount']}원"),
+            Text("이상 소비 : ${report!['anomalyCount']}건, 과소비 : ${report!['overspendingCount']}건"),
+            SizedBox(height: 20),
+            Text("소비 분석 리포트"),
+            ...suggestions.map((s) => Padding(
+              padding: EdgeInsets.symmetric(vertical: 4),
+              child: Text("📍 $s"),
+            )),
+            SizedBox(height: 20),
+            Text("카테고리별 통계"),
+            ...byCategory.map<Widget>((cat) {
+              final flaggedItems = cat['flaggedItems'] ?? [];
+              return Card(
+                margin: EdgeInsets.symmetric(vertical: 8),
+                child: Padding(
+                  padding: EdgeInsets.all(12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(cat['category'] ?? "카테고리 없음"),
+                      Text("총 지출 : ${cat['totalAmount']}원 | 이상소비: ${cat['anomalyCount']}건 | 과소비: ${cat['overspendingCount']}건"),
+                      SizedBox(height: 8),
+                      ...flaggedItems.map<Widget>((item) => Card(
+                        child: ListTile(
+                          title: Text("${item['content']?.isNotEmpty == true ? item['content'] : "내용 없음"} - ${item['amount'] ?? 0}원"),
+                          subtitle: Text("${item['date'] ?? "-"} / ${item['anomaly'] == true ? '이상소비' : item['overspending'] == true ? '과소비' : ''}"),
                         ),
-                      ),
-                    )),
-                  ],
+                      )),
+                    ],
+                  ),
                 ),
-              ),
-            );
-          }),
-        ],
+              );
+            }),
+          ],
+        ),
       ),
-      // body: ListView.builder(
+    );
+
+    // body: ListView.builder(
       //   padding: EdgeInsets.all(16),
       //   itemCount: feedbacks.length,
       //   itemBuilder: (context, index) => Container(
@@ -126,6 +130,5 @@ class _AIAnalysisHomePageState extends State<AIAnalysisHomePage>{
       //     ),
       //   ),
       // ),
-    );
   }
 }

@@ -43,7 +43,7 @@ class _AIRecipeBookmarkPageState extends State<AIRecipeBookmarkPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('레시피 북마크')),
-      backgroundColor: AppColors.surface,
+      backgroundColor: Colors.white,
       body: _bookmarks.isEmpty
           ? const Center(child: Text('북마크된 레시피가 없습니다.', style: AppTextStyles.body))
           : ListView.separated(

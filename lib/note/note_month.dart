@@ -328,11 +328,14 @@ class _NoteMonthScreenState extends State<NoteMonthScreen> {
                   );
                 },
               )
-                  : NoteListWidget(
-                key: ValueKey(_groupedNotes.length),
-                groupedNotes: _groupedNotes,
-                onDelete: _deleteNoteById,
-                onDataChanged: _fetchMonthlyNotes,
+                  : RefreshIndicator(
+                onRefresh: _fetchMonthlyNotes,
+                child: NoteListWidget(
+                  key: ValueKey(_groupedNotes.length),
+                  groupedNotes: _groupedNotes,
+                  onDelete: _deleteNoteById,
+                  onDataChanged: _fetchMonthlyNotes,
+                ),
               ),
             ),
           ],
