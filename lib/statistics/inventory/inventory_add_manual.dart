@@ -3,6 +3,24 @@ import 'package:intl/intl.dart';
 import '../../style/main_style.dart';
 import '../../style/inventory_style.dart';
 
+List<Map<String, dynamic>> normalizeParsedItems(dynamic data) {
+  if (data == null) return [];
+  if (data is String) {
+    return data.split(',').map((e) => {'name': e.trim(), 'amount': ''}).toList();
+  }
+  if (data is List) {
+    if (data.isNotEmpty && data.first is String) {
+      return data.map((e) => {'name': e, 'amount': ''}).toList();
+    } else if (data.isNotEmpty && data.first is Map) {
+      return data.map((e) => {
+        'name': e['name'] ?? '',
+        'amount': e['amount'] ?? '',
+      }).toList();
+    }
+  }
+  return [];
+}
+
 class InventoryAddManualPage extends StatefulWidget {
   final Map<String, dynamic>? initialData;
 
@@ -17,6 +35,7 @@ class _InventoryAddManualPageState extends State<InventoryAddManualPage> {
   final _priceController = TextEditingController();
   final _dateController = TextEditingController();
   final _expirationController = TextEditingController();
+  final _amountController = TextEditingController();
 
   DateTime _selectedDate = DateTime.now();
   DateTime? _selectedExpiration;
@@ -30,6 +49,8 @@ class _InventoryAddManualPageState extends State<InventoryAddManualPage> {
       _priceController.text = data['price'] ?? '';
       _dateController.text = data['date'] ?? '';
       _expirationController.text = data['expirationDate'] ?? '';
+      final parsedList = normalizeParsedItems(data['parsedItems']);
+      _amountController.text = parsedList.isNotEmpty ? parsedList[0]['amount'] ?? '' : '';
     } else {
       _dateController.text = DateFormat('yyyy-MM-dd').format(_selectedDate);
     }
@@ -72,7 +93,12 @@ class _InventoryAddManualPageState extends State<InventoryAddManualPage> {
       'date': _dateController.text.trim(),
       'expirationDate': _expirationController.text.trim(),
       'imagePath': null,
-      'parsedItems': [_titleController.text.trim()],
+      'parsedItems': [
+        {
+          'name': _titleController.text.trim(),
+          'amount': _amountController.text.trim(),
+        }
+      ],
       'category': '식품',
     };
 
@@ -119,11 +145,13 @@ class _InventoryAddManualPageState extends State<InventoryAddManualPage> {
           children: [
             _buildInputField('재료 이름', _titleController),
             const SizedBox(height: 16),
+            _buildInputField('수량 (예: 1개, 100g)', _amountController),
+            const SizedBox(height: 16),
             _buildInputField('가격 (선택)', _priceController, isNumber: true),
             const SizedBox(height: 16),
-            _buildInputField('구매일 (선택)', _dateController, isDate: true, onTap: () => _selectDate(isExpiration: true)),
+            _buildInputField('구매일 (선택)', _dateController, isDate: true, onTap: () => _selectDate(isExpiration: false)),
             const SizedBox(height: 16),
-            _buildInputField('유통기한 (선택)', _expirationController, isDate: true, onTap: () => _selectDate(isExpiration: true)),
+            _buildInputField('소비기한 (선택)', _expirationController, isDate: true, onTap: () => _selectDate(isExpiration: true)),
             const SizedBox(height: 24),
             ElevatedButton(
               onPressed: _submitItem,

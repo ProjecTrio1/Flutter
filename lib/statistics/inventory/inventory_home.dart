@@ -1,12 +1,19 @@
+import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/material.dart';
+
 import '../../style/main_style.dart';
 import '../../style/inventory_style.dart';
+
 import 'inventory_add_cart.dart';
 import 'inventory_add_manual.dart';
 import 'inventory_view.dart';
 import 'inventory_storage.dart';
 import 'inventory_detail_view.dart';
-import 'ai_recommendation/ai_recipe_recommendation.dart';
+
+import 'ai_recommendation/ai_recipe_api.dart';
+import 'ai_recommendation/ai_recipe_result_page.dart';
+import 'ai_recommendation/ai_recipe_bookmark.dart';
 
 class InventoryHomePage extends StatefulWidget {
   const InventoryHomePage({super.key});
@@ -45,6 +52,69 @@ class _InventoryHomePageState extends State<InventoryHomePage> {
     if (result != null && result is Map<String, dynamic>) {
       setState(() => allItems.add(result));
       await InventoryStorage.saveItems(allItems);
+    }
+  }
+
+  Future<void> _startCooking() async {
+    final prefs = await SharedPreferences.getInstance();
+    final jsonStr = prefs.getString('inventory_items');
+    if (jsonStr == null || jsonStr.isEmpty) return;
+
+    final decoded = jsonDecode(jsonStr) as List;
+    final items = decoded.map((e) => Map<String, dynamic>.from(e)).toList();
+
+    final allIngredients = <String>{};
+    for (final item in items) {
+      if (item['category'] == '식품') {
+        final parsedList = item['parsedItems'] as List<dynamic>? ?? [];
+        for (final parsed in parsedList) {
+          final ingredient = parsed is Map<String, dynamic> ? parsed['name'] : parsed.toString();
+          allIngredients.add(ingredient);
+        }
+      }
+    }
+
+    if (allIngredients.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('저장된 식품 재료가 없습니다.')),
+      );
+      return;
+    }
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const AlertDialog(
+        content: Row(
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(width: 16),
+            Text("레시피 분석 중입니다..."),
+          ],
+        ),
+      ),
+    );
+
+    try {
+      final result = await AIRecipeAPI.requestRecipe(allIngredients.toList());
+      final parsed = result['parsed'];
+
+      if (context.mounted) {
+        Navigator.pop(context); // 로딩 닫기
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => AIRecipeResultPage(parsed: parsed),
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('레시피 생성 실패: $e')),
+        );
+      }
     }
   }
 
@@ -90,6 +160,33 @@ class _InventoryHomePageState extends State<InventoryHomePage> {
     }
   }
 
+  void _confirmDelete(int index) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('삭제 확인'),
+        content: const Text('이 항목을 삭제하시겠습니까?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('취소'),
+          ),
+          TextButton(
+            onPressed: () async {
+              setState(() {
+                allItems.removeAt(index);
+              });
+              await InventoryStorage.saveItems(allItems);
+              Navigator.of(context).pop();
+            },
+            child: const Text('삭제', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+  }
+
+
   @override
   Widget build(BuildContext context) {
     final showItems = isCartView ? cartItems : ingredientItems;
@@ -101,12 +198,17 @@ class _InventoryHomePageState extends State<InventoryHomePage> {
         actions: [
           if (selectedCategory == '식품') ...[
             IconButton(
-              icon: const Icon(Icons.auto_awesome),
+              icon: const Icon(Icons.restaurant_menu),
               tooltip: 'AI 레시피 추천',
+              onPressed: _startCooking,
+            ),
+            IconButton(
+              icon: const Icon(Icons.bookmark_outline),
+              tooltip: '레시피 북마크',
               onPressed: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (_) => const AIRecipeRecommendationPage()),
+                  MaterialPageRoute(builder: (_) => const AIRecipeBookmarkPage()),
                 );
               },
             ),
@@ -178,6 +280,7 @@ class _InventoryHomePageState extends State<InventoryHomePage> {
                   items: showItems,
                   isCartView: isCartView,
                   onTap: _onTapItem,
+                  onDelete: _confirmDelete,
                 ),
               ),
             ],

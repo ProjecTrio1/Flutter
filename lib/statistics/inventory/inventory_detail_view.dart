@@ -3,6 +3,24 @@ import 'package:flutter/material.dart';
 import '../../style/main_style.dart';
 import '../../style/note_style.dart';
 
+List<Map<String, dynamic>> normalizeParsedItems(dynamic data) {
+  if (data == null) return [];
+  if (data is String) {
+    return data.split(',').map((e) => {'name': e.trim(), 'amount': ''}).toList();
+  }
+  if (data is List) {
+    if (data.isNotEmpty && data.first is String) {
+      return data.map((e) => {'name': e, 'amount': ''}).toList();
+    } else if (data.isNotEmpty && data.first is Map) {
+      return data.map((e) => {
+        'name': e['name'] ?? '',
+        'amount': e['amount'] ?? '',
+      }).toList();
+    }
+  }
+  return [];
+}
+
 class InventoryDetailView extends StatelessWidget {
   final Map<String, dynamic> item;
 
@@ -14,9 +32,7 @@ class InventoryDetailView extends StatelessWidget {
     final String price = item['price'] ?? '';
     final String date = item['date'] ?? '';
     final String imagePath = item['imagePath'] ?? '';
-    final List<String> parsedItems = item['parsedItems'] is String
-        ? (item['parsedItems'] as String).split(',')
-        : List<String>.from(item['parsedItems'] ?? []);
+    final List<Map<String, dynamic>> parsedItems = normalizeParsedItems(item['parsedItems']);
 
     return Scaffold(
       backgroundColor: AppColors.surface,
@@ -59,7 +75,12 @@ class InventoryDetailView extends StatelessWidget {
                 ? Wrap(
               spacing: 8,
               runSpacing: 8,
-              children: parsedItems.map((e) => Chip(label: Text(e))).toList(),
+              children: parsedItems.map((e) {
+                final label = (e['amount'] ?? '').toString().isNotEmpty
+                    ? '${e['name']} (${e['amount']})'
+                    : e['name'];
+                return Chip(label: Text(label));
+              }).toList(),
             )
                 : const Text('분석된 품목이 없습니다.', style: AppTextStyles.body),
           ],

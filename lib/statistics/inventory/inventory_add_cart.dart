@@ -4,7 +4,8 @@ import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import '../../style/main_style.dart';
 import '../../style/inventory_style.dart';
-import 'inventory_parser_dummy.dart';
+import 'ai_recommendation/ai_recipe_api.dart';
+import 'ai_recommendation/ai_recipe_result_page.dart';
 
 class InventoryAddCartPage extends StatefulWidget {
   const InventoryAddCartPage({super.key});
@@ -20,7 +21,7 @@ class _InventoryAddCartPageState extends State<InventoryAddCartPage> {
 
   DateTime _selectedDate = DateTime.now();
   File? _imageFile;
-  List<String> _parsedItems = [];
+  List<Map<String, dynamic>> _parsedItems = [];
 
   @override
   void initState() {
@@ -31,11 +32,10 @@ class _InventoryAddCartPageState extends State<InventoryAddCartPage> {
   Future<void> _pickImage() async {
     final picked = await ImagePicker().pickImage(source: ImageSource.gallery);
     if (picked != null) {
-      final file = File(picked.path);
-      setState(() => _imageFile = file);
-
-      final parsed = await InventoryParserDummy.analyze(file);
-      setState(() => _parsedItems = parsed);
+      setState(() {
+        _imageFile = File(picked.path);
+        _parsedItems = []; // 직접 추가하는 방식이면 초기화 유지
+      });
     }
   }
 
@@ -148,9 +148,48 @@ class _InventoryAddCartPageState extends State<InventoryAddCartPage> {
             if (_parsedItems.isNotEmpty) ...[
               const Text('인식된 재료', style: InventoryTextStyles.subHeader),
               const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                children: _parsedItems.map((e) => Chip(label: Text(e))).toList(),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: _parsedItems.asMap().entries.map((entry) {
+                  final index = entry.key;
+                  final item = entry.value;
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          flex: 2,
+                          child: Text(item['name'], style: AppTextStyles.body),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          flex: 3,
+                          child: TextField(
+                            decoration: const InputDecoration(
+                              hintText: '양 (예: 1개, 100g)',
+                              contentPadding: EdgeInsets.symmetric(horizontal: 12),
+                              border: OutlineInputBorder(),
+                            ),
+                            onChanged: (value) {
+                              setState(() {
+                                _parsedItems[index]['amount'] = value;
+                              });
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        IconButton(
+                          icon: const Icon(Icons.close, color: Colors.redAccent),
+                          onPressed: () {
+                            setState(() {
+                              _parsedItems.removeAt(index);
+                            });
+                          },
+                        ),
+                      ],
+                    ),
+                  );
+                }).toList(),
               ),
               const SizedBox(height: 20),
             ],

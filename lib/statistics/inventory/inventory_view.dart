@@ -2,18 +2,39 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import '../../style/main_style.dart';
 import '../../style/inventory_style.dart';
+import 'inventory_home.dart';
 
 class InventoryView extends StatelessWidget {
   final List<Map<String, dynamic>> items;
   final bool isCartView;
   final void Function(Map<String, dynamic> item, int index) onTap;
+  final void Function(int index) onDelete;
 
   const InventoryView({
     super.key,
     required this.items,
     required this.isCartView,
     required this.onTap,
+    required this.onDelete,
   });
+
+  List<Map<String, dynamic>> normalizeParsedItems(dynamic data) {
+    if (data == null) return [];
+    if (data is String) {
+      return data.split(',').map((e) => {'name': e.trim(), 'amount': ''}).toList();
+    }
+    if (data is List) {
+      if (data.isNotEmpty && data.first is String) {
+        return data.map((e) => {'name': e, 'amount': ''}).toList();
+      } else if (data.isNotEmpty && data.first is Map) {
+        return data.map((e) => {
+          'name': e['name'] ?? '',
+          'amount': e['amount'] ?? '',
+        }).toList();
+      }
+    }
+    return [];
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -42,6 +63,7 @@ class InventoryView extends StatelessWidget {
 
     return ListTile(
       onTap: () => onTap(item, index),
+      onLongPress: () => onDelete(index),
       leading: imagePath != null && File(imagePath).existsSync()
           ? ClipRRect(
         borderRadius: BorderRadius.circular(8),
@@ -72,18 +94,27 @@ class InventoryView extends StatelessWidget {
 
   Widget _buildIngredientTile(BuildContext context, Map<String, dynamic> item, int index) {
     final title = (item['title'] ?? '').toString().trim();
-    final expiration = item['expirationDate'] ?? '';
+    final expiration = (item['expirationDate'] ?? '').toString().trim();
+    final parsed = normalizeParsedItems(item['parsedItems']);
+
+    final amount = parsed.isNotEmpty ? (parsed[0]['amount'] ?? '') : '';
+
+    final detailText = [
+      if (amount.isNotEmpty) amount,
+      if (expiration.isNotEmpty) '소비기한: $expiration',
+    ].join(' / ');
 
     return ListTile(
       onTap: () => onTap(item, index),
+      onLongPress: () => onDelete(index),
       title: Text(
         title,
         style: AppTextStyles.body.copyWith(fontSize: 16, fontWeight: FontWeight.bold),
       ),
-      subtitle: Text(
-        expiration.isNotEmpty ? '유통기한: $expiration' : '',
-        style: AppTextStyles.body.copyWith(color: AppColors.textSecondary),
-      ),
+      subtitle: detailText.isNotEmpty
+          ? Text(detailText, style: AppTextStyles.body.copyWith(color: AppColors.textSecondary))
+          : null,
     );
   }
+
 }

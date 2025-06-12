@@ -8,12 +8,15 @@ class InventoryStorage {
   static Future<List<Map<String, dynamic>>> loadItems() async {
     final prefs = await SharedPreferences.getInstance();
     final jsonString = prefs.getString(_key);
-
     if (jsonString == null || jsonString.isEmpty) return [];
 
     try {
       final List<dynamic> decoded = jsonDecode(jsonString);
-      return decoded.map((e) => Map<String, dynamic>.from(e)).toList();
+      return decoded.map((e) {
+        final item = Map<String, dynamic>.from(e);
+        item['parsedItems'] = _normalizeParsedItems(item['parsedItems']);
+        return item;
+      }).toList();
     } catch (e) {
       return [];
     }
@@ -57,4 +60,23 @@ class InventoryStorage {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_key);
   }
+
+  static List<Map<String, dynamic>> _normalizeParsedItems(dynamic data) {
+    if (data == null) return [];
+    if (data is String) {
+      return data.split(',').map((e) => {'name': e.trim(), 'amount': ''}).toList();
+    }
+    if (data is List) {
+      if (data.isNotEmpty && data.first is String) {
+        return data.map((e) => {'name': e, 'amount': ''}).toList();
+      } else if (data.isNotEmpty && data.first is Map) {
+        return data.map((e) => {
+          'name': e['name'] ?? '',
+          'amount': e['amount'] ?? '',
+        }).toList();
+      }
+    }
+    return [];
+  }
 }
+
