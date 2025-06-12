@@ -190,7 +190,7 @@ class _InventoryHomePageState extends State<InventoryHomePage> {
     final showItems = isCartView ? cartItems : ingredientItems;
 
     return Scaffold(
-      backgroundColor: AppColors.surface,
+      backgroundColor: Colors.white,
       appBar: AppBar(
         title: const Text('모아보기'),
         actions: [
