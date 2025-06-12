@@ -8,7 +8,7 @@ class InventoryView extends StatelessWidget {
   final bool isCartView;
   final void Function(Map<String, dynamic> item, int index) onTap;
   final void Function(int index) onDelete;
-
+  final Future<void> Function()? onRefresh;
   final Set<int>? selectedIndexes;
   final void Function(int index, bool selected)? onSelect;
 
@@ -18,6 +18,7 @@ class InventoryView extends StatelessWidget {
     required this.isCartView,
     required this.onTap,
     required this.onDelete,
+    this.onRefresh,
     this.selectedIndexes,
     this.onSelect,
   });
@@ -42,18 +43,30 @@ class InventoryView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListView.separated(
-      itemCount: items.length,
-      separatorBuilder: (_, __) => const Divider(height: 1),
-      itemBuilder: (context, index) {
-        final item = items[index];
-        return Container(
-          color: Colors.white,
-          child: isCartView
-              ? _buildCartTile(context, item, index)
-              : _buildIngredientTile(context, item, index),
-        );
-      },
+    return RefreshIndicator(
+      onRefresh: onRefresh ?? () async {},
+      child: items.isEmpty
+          ? const SingleChildScrollView(
+        physics: AlwaysScrollableScrollPhysics(),
+        child: SizedBox(
+          height: 300,
+          child: Center(child: Text('저장된 내역이 없습니다.', style: AppTextStyles.body)),
+        ),
+      )
+          : ListView.separated(
+        physics: const AlwaysScrollableScrollPhysics(),
+        itemCount: items.length,
+        separatorBuilder: (_, __) => const Divider(height: 1),
+        itemBuilder: (context, index) {
+          final item = items[index];
+          return Container(
+            color: Colors.white,
+            child: isCartView
+                ? _buildCartTile(context, item, index)
+                : _buildIngredientTile(context, item, index),
+          );
+        },
+      ),
     );
   }
 
@@ -62,12 +75,10 @@ class InventoryView extends StatelessWidget {
     final price = item['price'] ?? '';
     final date = item['date'] ?? '';
     final imagePath = item['imagePath'];
-
     final displayTitle = title.isNotEmpty ? title : date;
 
     return ListTile(
       onTap: () => onTap(item, index),
-      onLongPress: () => onDelete(index),
       leading: imagePath != null && File(imagePath).existsSync()
           ? ClipRRect(
         borderRadius: BorderRadius.circular(8),
@@ -104,7 +115,6 @@ class InventoryView extends StatelessWidget {
     final expiration = (item['expirationDate'] ?? '').toString().trim();
     final parsed = normalizeParsedItems(item['parsedItems']);
     final amount = parsed.isNotEmpty ? (parsed[0]['amount'] ?? '') : '';
-
     final detailText = [
       if (amount.isNotEmpty) amount,
       if (expiration.isNotEmpty) '소비기한: $expiration',
@@ -114,7 +124,6 @@ class InventoryView extends StatelessWidget {
 
     return ListTile(
       onTap: () => onTap(item, index),
-      onLongPress: () => onDelete(index),
       leading: onSelect != null
           ? Checkbox(
         value: isSelected,
@@ -125,13 +134,21 @@ class InventoryView extends StatelessWidget {
         title,
         style: AppTextStyles.body.copyWith(fontSize: 16, fontWeight: FontWeight.bold),
       ),
-      subtitle: detailText.isNotEmpty
-          ? Text(
-        detailText,
+      subtitle: Text(
+        detailText.isNotEmpty ? detailText : ' ',
         style: AppTextStyles.body.copyWith(color: AppColors.textSecondary),
-      )
-          : null,
-      trailing: const Icon(Icons.chevron_right),
+      ),
+      // trailing: Row(
+      //   mainAxisSize: MainAxisSize.min,
+      //   children: [
+      //     if (onSelect != null)
+      //       IconButton(
+      //         icon: const Icon(Icons.delete, color: Colors.redAccent),
+      //         onPressed: () => onDelete(index),
+      //       ),
+      //     const Icon(Icons.chevron_right),
+      //   ],
+      // ),
     );
   }
 }

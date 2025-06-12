@@ -46,54 +46,52 @@ class _InventoryHomePageState extends State<InventoryHomePage> {
     setState(() => allItems = loaded);
   }
 
-  Future<void> _navigateToAddCart() async {
+  Future<void> _navigateToAddCart([Map<String, dynamic>? item, int? index]) async {
     final result = await Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => const InventoryAddCartPage()),
+      MaterialPageRoute(
+        builder: (_) => InventoryAddCartPage(
+          isEdit: item != null,
+          initialData: item,
+        ),
+      ),
     );
-    if (result != null && result is Map<String, dynamic>) {
-      setState(() => allItems.add(result));
-      await InventoryStorage.saveItems(allItems);
+
+    if (result == true) {
+      await _loadItems();
     }
   }
+
+
 
   Future<void> _navigateToAddManual([Map<String, dynamic>? item, int? index]) async {
     final result = await Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (_) => InventoryAddManualPage(initialData: item),
-      ),
+      MaterialPageRoute(builder: (_) => InventoryAddManualPage(initialData: item)),
     );
-    if (result != null && result is Map<String, dynamic>) {
-      setState(() {
-        if (index != null) allItems[index] = result;
-        else allItems.add(result);
-      });
-      await InventoryStorage.saveItems(allItems);
+
+    if (result is Map<String, dynamic> && result['delete'] == true) {
+      if (item != null && index != null) {
+        setState(() => allItems.removeAt(index));
+        await InventoryStorage.saveItems(allItems);
+      }
+      return;
+    }
+
+    if (result == true) {
+      await _loadItems();
     }
   }
 
-  Future<void> _startCookingWithSelected() async {
-    // 디버깅용
-    print('ingredientItems: $ingredientItems');
-    print('selected indexes: $_selectedIngredientIndexes');
 
+  Future<void> _startCookingWithSelected() async {
     final selectedIngredients = _selectedIngredientIndexes
-        .map((i) {
-      final item = ingredientItems[i];
-      // name 키 없으면 title 키로 대체
-      return (item['name'] ?? item['title'] ?? '').toString().trim();
-    })
+        .map((i) => (ingredientItems[i]['name'] ?? ingredientItems[i]['title'] ?? '').toString().trim())
         .where((name) => name.isNotEmpty)
-        .toSet()
         .toList();
 
-    print('전송할 재료: $selectedIngredients');
-
     if (selectedIngredients.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('선택된 재료가 없습니다.')),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('선택된 재료가 없습니다.')));
       return;
     }
 
@@ -119,17 +117,13 @@ class _InventoryHomePageState extends State<InventoryHomePage> {
         Navigator.pop(context);
         Navigator.push(
           context,
-          MaterialPageRoute(
-            builder: (_) => AIRecipeResultPage(parsed: parsed),
-          ),
+          MaterialPageRoute(builder: (_) => AIRecipeResultPage(parsed: parsed)),
         );
       }
     } catch (e) {
       if (context.mounted) {
         Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('레시피 생성 실패: $e')),
-        );
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('레시피 생성 실패: $e')));
       }
     }
   }
@@ -148,14 +142,20 @@ class _InventoryHomePageState extends State<InventoryHomePage> {
   List<Map<String, dynamic>> get cartItems => _filteredItems.where((e) => e['imagePath'] != null).toList();
   List<Map<String, dynamic>> get ingredientItems => _filteredItems.where((e) => e['imagePath'] == null).toList();
 
-  void _onTapItem(Map<String, dynamic> item, int index) {
+  void _onTapItem(Map<String, dynamic> item, int index) async {
     if (isIngredientView) {
-      _navigateToAddManual(item, index);
+      await _navigateToAddManual(item, index);
     } else {
-      Navigator.push(
+      final result = await Navigator.push(
         context,
-        MaterialPageRoute(builder: (_) => InventoryDetailView(item: item)),
+        MaterialPageRoute(
+          builder: (_) => InventoryAddCartPage(
+            isEdit: true,
+            initialData: item,
+          ),
+        ),
       );
+      if (result != null) _loadItems();
     }
   }
 
@@ -166,15 +166,10 @@ class _InventoryHomePageState extends State<InventoryHomePage> {
         title: const Text('삭제 확인'),
         content: const Text('이 항목을 삭제하시겠습니까?'),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('취소'),
-          ),
+          TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('취소')),
           TextButton(
             onPressed: () async {
-              setState(() {
-                allItems.removeAt(index);
-              });
+              setState(() => allItems.removeAt(index));
               await InventoryStorage.saveItems(allItems);
               Navigator.of(context).pop();
             },
@@ -194,22 +189,20 @@ class _InventoryHomePageState extends State<InventoryHomePage> {
       appBar: AppBar(
         title: const Text('모아보기'),
         actions: [
-          if (selectedCategory == '식품') ...[
+          if (selectedCategory == '식품')
             IconButton(
               icon: const Icon(Icons.bookmark_outline),
               tooltip: '레시피 북마크',
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const AIRecipeBookmarkPage()),
-                );
-              },
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const AIRecipeBookmarkPage()),
+              ),
             ),
+          if (selectedCategory == '식품')
             IconButton(
               icon: const Icon(Icons.add),
               onPressed: _navigateToAddCart,
             ),
-          ],
         ],
       ),
       body: Padding(
@@ -251,9 +244,7 @@ class _InventoryHomePageState extends State<InventoryHomePage> {
 
             if (selectedCategory == '의류')
               const Expanded(
-                child: Center(
-                  child: Text('의류 항목은 추후 업데이트 예정입니다.', style: AppTextStyles.body),
-                ),
+                child: Center(child: Text('의류 항목은 추후 업데이트 예정입니다.', style: AppTextStyles.body)),
               )
             else ...[
               if (isIngredientView)
@@ -265,11 +256,9 @@ class _InventoryHomePageState extends State<InventoryHomePage> {
                       onPressed: () {
                         setState(() {
                           _selectAll = !_selectAll;
-                          if (_selectAll) {
-                            _selectedIngredientIndexes = Set<int>.from(ingredientItems.asMap().keys);
-                          } else {
-                            _selectedIngredientIndexes.clear();
-                          }
+                          _selectedIngredientIndexes = _selectAll
+                              ? Set<int>.from(ingredientItems.asMap().keys)
+                              : {};
                         });
                       },
                     ),
@@ -277,6 +266,38 @@ class _InventoryHomePageState extends State<InventoryHomePage> {
                       icon: const Icon(Icons.restaurant_menu),
                       tooltip: '선택 재료로 레시피 추천',
                       onPressed: _selectedIngredientIndexes.isEmpty ? null : _startCookingWithSelected,
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.delete),
+                      tooltip: '선택 재료 삭제',
+                      onPressed: _selectedIngredientIndexes.isEmpty
+                          ? null
+                          : () {
+                        showDialog(
+                          context: context,
+                          builder: (ctx) => AlertDialog(
+                            title: const Text('삭제하시겠습니까?'),
+                            content: const Text('선택한 재료들을 삭제합니다.'),
+                            actions: [
+                              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('취소')),
+                              TextButton(
+                                onPressed: () async {
+                                  final indexesToRemove = _selectedIngredientIndexes.toList()..sort((a, b) => b.compareTo(a));
+                                  setState(() {
+                                    for (final i in indexesToRemove) {
+                                      allItems.remove(ingredientItems[i]);
+                                    }
+                                    _selectedIngredientIndexes.clear();
+                                  });
+                                  await InventoryStorage.saveItems(allItems);
+                                  if (context.mounted) Navigator.pop(ctx);
+                                },
+                                child: const Text('삭제'),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
                     ),
                     const Spacer(),
                     OutlinedButton.icon(
@@ -288,9 +309,7 @@ class _InventoryHomePageState extends State<InventoryHomePage> {
                   ],
                 ),
               Expanded(
-                child: showItems.isEmpty
-                    ? const Center(child: Text('저장된 내역이 없습니다.', style: AppTextStyles.body))
-                    : InventoryView(
+                child: InventoryView(
                   items: showItems,
                   isCartView: isCartView,
                   onTap: _onTapItem,
@@ -305,6 +324,7 @@ class _InventoryHomePageState extends State<InventoryHomePage> {
                       }
                     });
                   },
+                  onRefresh: _loadItems,
                 ),
               ),
             ],

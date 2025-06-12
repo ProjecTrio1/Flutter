@@ -32,7 +32,13 @@ class InventoryStorage {
   // 단일 항목 추가
   static Future<void> addItem(Map<String, dynamic> newItem) async {
     final items = await loadItems();
-    items.add(newItem);
+    final id = newItem['id'];
+    final index = items.indexWhere((e) => e['id'] == id);
+    if (index != -1) {
+      items[index] = newItem;
+    } else {
+      items.add(newItem);
+    }
     await saveItems(items);
   }
 
@@ -78,5 +84,23 @@ class InventoryStorage {
     }
     return [];
   }
+
+  static Future<void> deleteItem(Map<String, dynamic> target) async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString('inventory_items');
+    if (raw == null) return;
+
+    final List decoded = jsonDecode(raw);
+    decoded.removeWhere((e) => Map<String, dynamic>.from(e).toString() == target.toString());
+    await prefs.setString('inventory_items', jsonEncode(decoded));
+  }
+
+  static Future<void> deleteItemById(String id) async {
+    final prefs = await SharedPreferences.getInstance();
+    final items = await loadItems();
+    final filtered = items.where((item) => item['id'] != id).toList();
+    await saveItems(filtered);
+  }
+
 }
 

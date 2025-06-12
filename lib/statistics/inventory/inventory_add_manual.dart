@@ -138,7 +138,38 @@ class _InventoryAddManualPageState extends State<InventoryAddManualPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.surface,
-      appBar: AppBar(title: const Text('재료 수동 추가')),
+      appBar: AppBar(
+        title: const Text('식재료 수동 추가'),
+        actions: widget.initialData != null
+            ? [
+          IconButton(
+            icon: const Icon(Icons.delete, color: Colors.black),
+            onPressed: () {
+              showDialog(
+                context: context,
+                builder: (ctx) => AlertDialog(
+                  title: const Text('삭제하시겠습니까?'),
+                  content: const Text('이 식재료 항목을 삭제합니다.'),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(ctx),
+                      child: const Text('취소'),
+                    ),
+                    TextButton(
+                      onPressed: () async {
+                        Navigator.pop(ctx);
+                        Navigator.pop(context, {'delete': true});
+                      },
+                      child: const Text('삭제'),
+                    ),
+                  ],
+                ),
+              );
+            },
+          )
+        ]
+            : null,
+      ),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: ListView(
