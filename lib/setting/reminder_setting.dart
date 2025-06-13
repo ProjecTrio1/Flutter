@@ -155,17 +155,17 @@ class _ReminderSettingScreenState extends State<ReminderSettingScreen> {
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
                         IconButton(
-                          onPressed: () => _toggleFeedback(item['id'] ?? '', true),
+                          onPressed: () => _toggleFeedback(item['id'] ?? '', false),
                           icon: Icon(
                             Icons.thumb_up,
-                            color: feedback == 'up' ? NoteColors.income : Colors.grey.shade400,
+                            color: feedback == 'down' ? NoteColors.income : Colors.grey.shade400,
                           ),
                         ),
                         IconButton(
-                          onPressed: () => _toggleFeedback(item['id'] ?? '', false),
+                          onPressed: () => _toggleFeedback(item['id'] ?? '', true),
                           icon: Icon(
                             Icons.thumb_down,
-                            color: feedback == 'down' ? NoteColors.expense : Colors.grey.shade400,
+                            color: feedback == 'up' ? NoteColors.expense : Colors.grey.shade400,
                           ),
                         ),
                       ],

@@ -37,10 +37,10 @@ class _OverspendFeedbackDialogState extends State<OverspendFeedbackDialog> {
                 iconSize: 36,
                 icon: Icon(
                   Icons.thumb_up,
-                  color: _selectedFeedback == true ? NoteColors.income : Colors.grey,
+                  color: _selectedFeedback == false ? NoteColors.income : Colors.grey,
                 ),
                 onPressed: () {
-                  setState(() => _selectedFeedback = _selectedFeedback == true ? null : true);
+                  setState(() => _selectedFeedback = _selectedFeedback == false ? null : false);
                 },
               ),
               const SizedBox(width: 20),
@@ -48,10 +48,10 @@ class _OverspendFeedbackDialogState extends State<OverspendFeedbackDialog> {
                 iconSize: 36,
                 icon: Icon(
                   Icons.thumb_down,
-                  color: _selectedFeedback == false ? NoteColors.expense : Colors.grey,
+                  color: _selectedFeedback == true ? NoteColors.expense : Colors.grey,
                 ),
                 onPressed: () {
-                  setState(() => _selectedFeedback = _selectedFeedback == false ? null : false);
+                  setState(() => _selectedFeedback = _selectedFeedback == true ? null : true);
                 },
               ),
             ],

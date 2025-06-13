@@ -149,6 +149,7 @@ class _InventoryAddCartPageState extends State<InventoryAddCartPage> {
     // 재료 저장
     for (final parsed in _parsedItems) {
       final newIngredient = {
+        'id': UniqueKey().toString(),
         'title': parsed['name'],
         'price': parsed['price'],
         'date': _dateController.text.trim(),

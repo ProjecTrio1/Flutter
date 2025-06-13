@@ -160,9 +160,9 @@ class _NoteListWidgetState extends State<NoteListWidget> {
                                 IconButton(
                                   iconSize: 24,
                                   icon: Icon(Icons.thumb_up,
-                                      color: feedback == true ? NoteColors.income : Colors.grey),
+                                      color: feedback == false ? NoteColors.income : Colors.grey),
                                   onPressed: () async {
-                                    final newFeedback = feedback == true ? null : true;
+                                    final newFeedback = feedback == false ? null : false;
                                     await sendFeedback(id, newFeedback);
                                     setState(() {
                                       widget.groupedNotes[date]![index]['userFeedback'] = newFeedback;
@@ -172,9 +172,9 @@ class _NoteListWidgetState extends State<NoteListWidget> {
                                 IconButton(
                                   iconSize: 24,
                                   icon: Icon(Icons.thumb_down,
-                                      color: feedback == false ? NoteColors.expense : Colors.grey),
+                                      color: feedback == true ? NoteColors.expense : Colors.grey),
                                   onPressed: () async {
-                                    final newFeedback = feedback == false ? null : false;
+                                    final newFeedback = feedback == true ? null : true;
                                     await sendFeedback(id, newFeedback);
                                     setState(() {
                                       widget.groupedNotes[date]![index]['userFeedback'] = newFeedback;
