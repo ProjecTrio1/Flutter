@@ -200,15 +200,16 @@ class _QuickAddScreenState extends State<QuickAddScreen> {
       try {
         if (bodyString.trim().startsWith('{')) {
           final decoded = jsonDecode(bodyString);
+          final message = decoded['recommendation'] as String? ?? '';
 
           if (decoded is Map &&
               decoded.containsKey('recommendation') &&
-              (decoded['recommendation'] as String).trim().isNotEmpty) {
+              message.trim().isNotEmpty) {
             await showDialog(
               context: context,
               builder: (_) => AlertDialog(
                 title: Text('과소비 알림'),
-                content: Text(decoded['recommendation']),
+                content: Text(message),
                 actions: [TextButton(onPressed: () => Navigator.pop(context), child: Text('확인'))],
               ),
             );
@@ -251,6 +252,9 @@ class _QuickAddScreenState extends State<QuickAddScreen> {
 
       } catch (e) {
         print("JSON 파싱 오류: $e");
+        print("📨 응답 status: ${response.statusCode}");
+        print("📨 응답 body: ${response.body}");
+        print("📨 디코딩된 body: ${utf8.decode(response.bodyBytes)}");
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('서버 응답 오류')));
         Navigator.pop(context, true);
       }
