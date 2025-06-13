@@ -4,7 +4,7 @@
     <uses-permission android:name="android.permission.CAMERA"/>
 
     <application
-        android:label="projectrio"
+        android:label="그알"
         android:icon="@mipmap/ic_launcher"
         android:usesCleartextTraffic="true">
     <activity

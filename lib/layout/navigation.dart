@@ -84,7 +84,11 @@ class _NavigationState extends State<Navigation> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('그알', style: AppTextStyles.title.copyWith(fontSize: 23)),
+                    Image.asset(
+                      'assets/logo/logo_icon.png',
+                      height: 40,
+                      fit: BoxFit.contain,
+                    ),
                     IconButton(
                       icon: Icon(Icons.notifications, color: AppColors.textPrimary),
                       onPressed: () {
