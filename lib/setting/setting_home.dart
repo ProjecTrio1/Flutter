@@ -8,6 +8,9 @@ import 'reminder_setting.dart';
 import 'notice.dart';
 import 'help.dart';
 import 'contact.dart';
+import '../login/login_home.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
 
 class SettingHomeScreen extends StatelessWidget {
   const SettingHomeScreen({super.key});
@@ -73,6 +76,22 @@ class SettingHomeScreen extends StatelessWidget {
               MaterialPageRoute(builder: (_) => ContactScreen()),
             ),
           ),
+          _buildSettingTile(
+            context,
+            icon: Icons.logout,
+            title: '로그아웃',
+            onTap: () async {
+              final prefs = await SharedPreferences.getInstance();
+              await prefs.clear(); // 모든 저장된 로그인 정보 삭제
+
+              // 로그인 화면으로 이동
+              Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(builder: (_) => LoginHome()),
+                    (route) => false,
+              );
+            },
+          )
         ],
       ),
     );

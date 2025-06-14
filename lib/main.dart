@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'layout/navigation.dart';
 import 'login/login_home.dart';
@@ -7,12 +8,17 @@ import 'style/main_style.dart';
 import 'group/post_add.dart';
 import 'note/note_add.dart';
 
-void main() {
-  runApp(const MyApp());
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  final prefs = await SharedPreferences.getInstance();
+  final userID = prefs.getInt('userID');
+
+  runApp(MyApp(isLoggedIn: userID != null));
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  final bool isLoggedIn;
+  const MyApp({super.key, required this.isLoggedIn});
 
   @override
   Widget build(BuildContext context) {
@@ -26,8 +32,7 @@ class MyApp extends StatelessWidget {
       ],
       supportedLocales: const [Locale('ko', 'KR')],
       debugShowCheckedModeBanner: false,
-      home: LoginHome(),
-
+      home: isLoggedIn ? Navigation() : LoginHome(),
       onGenerateRoute: (settings) {
         if (settings.name == '/group/add') {
           final args = settings.arguments as Map<String, dynamic>?;
@@ -41,7 +46,7 @@ class MyApp extends StatelessWidget {
             builder: (_) => QuickAddScreen(existingNote: args),
           );
         }
-        return null; // 없는 라우트 처리
+        return null;
       },
     );
   }

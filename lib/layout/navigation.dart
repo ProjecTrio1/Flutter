@@ -53,7 +53,7 @@ class _NavigationState extends State<Navigation> {
       final createdAt = DateTime.tryParse(r['createdAt'] ?? '');
       final feedback = r['feedback'] ?? '';
 
-      // 테스트 위해 조건 강제 수정
+      // 테스트 위해 조건 수정
       if (createdAt != null && now.difference(createdAt).inDays >= 30 && feedback.isEmpty){
         // 테스트 조건: if (createdAt != null && feedback.isEmpty) {
         showDialog(
