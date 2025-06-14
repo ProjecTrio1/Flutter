@@ -79,7 +79,6 @@ class _InventoryHomePageState extends State<InventoryHomePage> {
     }
 
     if (result is Map<String, dynamic> && result['delete'] != true) {
-      result['id'] = DateTime.now().millisecondsSinceEpoch.toString();
       await InventoryStorage.addItem(result);
       await _loadItems();
     }

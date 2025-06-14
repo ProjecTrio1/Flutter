@@ -39,12 +39,14 @@ class _InventoryAddManualPageState extends State<InventoryAddManualPage> {
 
   DateTime _selectedDate = DateTime.now();
   DateTime? _selectedExpiration;
+  String? existingId;
 
   @override
   void initState() {
     super.initState();
     if (widget.initialData != null) {
       final data = widget.initialData!;
+      existingId = data['id']; // 기존 id 보존
       _titleController.text = data['title'] ?? '';
       _priceController.text = data['price'] ?? '';
       _dateController.text = data['date'] ?? '';
@@ -88,6 +90,7 @@ class _InventoryAddManualPageState extends State<InventoryAddManualPage> {
     }
 
     final item = {
+      'id': existingId ?? DateTime.now().millisecondsSinceEpoch.toString(),
       'title': _titleController.text.trim(),
       'price': _priceController.text.trim(),
       'date': _dateController.text.trim(),
@@ -180,9 +183,11 @@ class _InventoryAddManualPageState extends State<InventoryAddManualPage> {
             const SizedBox(height: 16),
             _buildInputField('가격 (선택)', _priceController, isNumber: true),
             const SizedBox(height: 16),
-            _buildInputField('구매일 (선택)', _dateController, isDate: true, onTap: () => _selectDate(isExpiration: false)),
+            _buildInputField('구매일 (선택)', _dateController,
+                isDate: true, onTap: () => _selectDate(isExpiration: false)),
             const SizedBox(height: 16),
-            _buildInputField('소비기한 (선택)', _expirationController, isDate: true, onTap: () => _selectDate(isExpiration: true)),
+            _buildInputField('소비기한 (선택)', _expirationController,
+                isDate: true, onTap: () => _selectDate(isExpiration: true)),
             const SizedBox(height: 24),
             ElevatedButton(
               onPressed: _submitItem,
