@@ -27,7 +27,7 @@ class _ContactScreenState extends State<ContactScreen> {
 
     _titleController.clear();
     _contentController.clear();
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('문의가 임시 저장되었습니다.')));
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('문의가 등록되었습니다.')));
   }
 
   @override
